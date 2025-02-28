@@ -1,0 +1,56 @@
+# Virtual Environment
+venv/
+.env/
+
+# Compiled Python Files
+**/__pycache__/
+*.py[cod]
+
+# Jupyter Notebook Checkpoints
+.ipynb_checkpoints/
+
+# Distribution Files
+dist/
+build/
+*.egg-info/
+
+# Logs & System Files
+logs/
+*.log
+debug.log
+.DS_Store
+Thumbs.db
+
+# Machine Learning / Deep Learning Artifacts
+checkpoints/
+*.ckpt
+*.h5
+*.pt
+*.pth
+*.onnx
+
+# TensorBoard Logs
+runs/
+events.out.tfevents*
+
+# Datasets & Cache
+data/
+dataset/
+cache/
+*.csv
+*.json
+*.npz
+*.pkl
+*.hdf5
+*.sqlite
+*.db
+
+# Environment & Secrets
+.env
+*.secret
+config.json
+
+# IDE & Editor Files
+.vscode/
+.idea/
+*.sublime-workspace
