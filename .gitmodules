@@ -1,3 +1,9 @@
 [submodule "Third_Party_Code/SCRUB"]
 	path = Third_Party_Code/SCRUB
 	url = https://github.com/meghdadk/SCRUB.git
+[submodule "Third_Party_Code/SSD"]
+	path = Third_Party_Code/SSD
+	url = https://github.com/if-loops/selective-synaptic-dampening.git
+[submodule "Third_Party_Code/BadTeach"]
+	path = Third_Party_Code/BadTeach
+	url = https://github.com/vikram2000b/bad-teaching-unlearning.git
