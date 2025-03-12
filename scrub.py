@@ -100,7 +100,6 @@ def run_epoch(args, model, model_init, train_loader, criterion=torch.nn.CrossEnt
 
     return metrics
 
-# Function to perform initial training
 def train(args):                 # based on SCRUB main.py
 
     # Process learning rate decay epochs
@@ -217,7 +216,7 @@ def train(args):                 # based on SCRUB main.py
             if not args.disable_bn:
                 run_epoch(args, model, model_init, train_loader, criterion, optimizer, scheduler, epoch, weight_decay, mode='dry_run')
             run_epoch(args, model, model_init, test_loader, criterion, optimizer, scheduler, epoch, weight_decay, mode='test')
-        if epoch % 5 == 0:
+        if epoch % 1 == 0:
             torch.save(model.state_dict(), f"checkpoints/{args.name}_{epoch}.pt")
         
         print(f'Epoch Time: {np.round(time.time() - t1, 2)} sec')
@@ -280,38 +279,173 @@ def get_default_args():
     args = parser.parse_args([])  # Provide an empty list to get default values
     return args
 
+def split_dataset_for_forgetting(dataset, class_to_forget, num_to_forget, args, seed=1):
+    
+    # Load the full dataset (training, validation, and test sets)
+    train_loader_full, valid_loader_full, test_loader_full = datasets.get_loaders(
+        dataset, batch_size=args.batch_size, seed=seed, root=args.dataroot, augment=False, shuffle=True
+    )
+
+    # Load the dataset but mark the samples that need to be forgotten
+    marked_loader, _, _ = datasets.get_loaders(
+        dataset, class_to_replace=class_to_forget, num_indexes_to_replace=num_to_forget, only_mark=True, 
+        batch_size=1, seed=seed, root=args.dataroot, augment=False, shuffle=True
+    )
+
+    def replace_loader_dataset(dataset, batch_size, seed, shuffle=True):
+        """
+        Creates a new DataLoader for a given dataset.
+        """
+        torch.manual_seed(seed)  # Ensure reproducibility
+        return torch.utils.data.DataLoader(
+            dataset, batch_size=batch_size, num_workers=0, pin_memory=True, shuffle=shuffle
+        )
+
+    # Create a deep copy of the marked dataset to isolate the samples to forget
+    forget_dataset = copy.deepcopy(marked_loader.dataset)
+    marked = forget_dataset.targets < 0  # Identify samples marked for forgetting
+    forget_dataset.data = forget_dataset.data[marked]
+    forget_dataset.targets = - forget_dataset.targets[marked] - 1  # Restore original labels
+
+    # Create DataLoader for the forget dataset
+    forget_loader = replace_loader_dataset(forget_dataset, batch_size=args.forget_bs, seed=seed, shuffle=True)
+
+    # Create a deep copy of the marked dataset to retain the remaining samples
+    retain_dataset = copy.deepcopy(marked_loader.dataset)
+    marked = retain_dataset.targets >= 0  # Identify samples to retain
+    retain_dataset.data = retain_dataset.data[marked]
+    retain_dataset.targets = retain_dataset.targets[marked]
+
+    # Create DataLoader for the retain dataset
+    retain_loader = replace_loader_dataset(retain_dataset, batch_size=args.retain_bs, seed=seed, shuffle=True)
+
+    # Ensure the split was performed correctly
+    assert len(forget_dataset) + len(retain_dataset) == len(train_loader_full.dataset)
+
+    return forget_loader, retain_loader
+
+def load_pretrained_models(model, args, train_loader, training_epochs):
+    """
+    Loads pre-trained models from checkpoint files, creates copies for teacher-student learning,
+    and prepares models for further training.
+    
+    Args:
+        model (torch.nn.Module): The neural network model to load weights into.
+        args (argparse.Namespace): Arguments containing model parameters.
+        train_loader (torch.utils.data.DataLoader): Training data loader.
+        training_epochs (int): Number of training epochs (used in checkpoint naming).
+    
+    Returns:
+        model (torch.nn.Module): The loaded model (before forgetting).
+        model0 (torch.nn.Module): The loaded model (after forgetting).
+        model_initial (torch.nn.Module): The initial model before training.
+        teacher (torch.nn.Module): A copy of the model used for distillation.
+        student (torch.nn.Module): A copy of the model used for further training.
+    """
+    # Create deep copies of the model to store different versions
+    model0 = copy.deepcopy(model)  # Model after forgetting
+    model_initial = copy.deepcopy(model)  # Initial model before any training
+
+    # Extract arguments for model configuration
+    arch = args.model  # Model architecture
+    filters = args.filters  # Number of filters in CNN (if applicable)
+    arch_filters = arch + '_' + str(filters).replace('.', '_')  # Format architecture name
+    dataset = args.dataset  # Dataset name
+    class_to_forget = args.forget_class  # Class to forget
+    init_checkpoint = f"checkpoints/{args.name}_init.pt"  # Path to initial model checkpoint
+    num_to_forget = args.num_to_forget  # Number of samples to forget
+    num_total = len(train_loader.dataset)  # Total number of samples
+    num_to_retain = num_total - 300  # Retaining remaining samples (may be modified)
+    seed = args.seed  # Random seed
+    unfreeze_start = None  # Placeholder for unfreezing layers
+
+    # Formatting hyperparameter tags for checkpoint filenames
+    learningrate = f"lr_{str(args.lr).replace('.', '_')}"
+    batch_size = f"_bs_{str(args.batch_size)}"
+    lossfn = f"_ls_{args.lossfn}"
+    wd = f"_wd_{str(args.weight_decay).replace('.', '_')}"
+    seed_name = f"_seed_{args.seed}_"
+    num_tag = '' if num_to_forget is None else f'_num_{num_to_forget}'
+    unfreeze_tag = '_' if unfreeze_start is None else f'_unfreeze_from_{unfreeze_start}_'
+    augment_tag = '' if not False else f'augment_'
+
+    # Define checkpoint filenames
+    m_name = f'checkpoints/{dataset}_{arch_filters}_forget_None{unfreeze_tag}{augment_tag}{learningrate}{batch_size}{lossfn}{wd}{seed_name}{training_epochs}.pt'
+    m0_name = f'checkpoints/{dataset}_{arch_filters}_forget_{class_to_forget}{num_tag}{unfreeze_tag}{augment_tag}{learningrate}{batch_size}{lossfn}{wd}{seed_name}{training_epochs}.pt'
+
+    # Load pre-trained weights into models
+    model.load_state_dict(torch.load(m_name))  # Model before forgetting
+    model0.load_state_dict(torch.load(m0_name))  # Model after forgetting
+    model_initial.load_state_dict(torch.load(init_checkpoint))  # Initial model before training
+
+    # Create teacher and student models for knowledge distillation
+    teacher = copy.deepcopy(model)
+    student = copy.deepcopy(model)
+
+    # Move models to GPU if available
+    model.cuda()
+    model0.cuda()
+
+    # Store initial parameter copies for potential weight updates
+    for p in model.parameters():
+        p.data0 = p.data.clone()
+    for p in model0.parameters():
+        p.data0 = p.data.clone()
+
+    return model, model0, model_initial, teacher, student
 #-------------------------------------------------------------------#
+
+# PRE-TRAINING
 
 # Define namespace for arguments
 args = get_default_args()
+args_f = get_default_args()
 
-# Initialize parameters
+# Initialize before parameters
 args.dataset = 'small_cifar6'
 args.model = 'allcnn'
 args.root = 'data/'
 args.filters = 1.0
 args.lr = 0.001
-args.resume = 'checkpoints/small_cifar6_0.pt'
+#args.resume = 'checkpoints/small_cifar6_0.pt'
 args.diable_bn = True
 args.weight_decay = 0.1
 args.batch_size = 128
-args.epochs = 31
+args.epochs = 5
 args.seed = 3
 
-# Running the initial training function
-model, train_loader = train(args)
+# Initialize forget parameters
+args_f.dataset = 'small_cifar6'
+args_f.model = 'allcnn'
+args_f.root = '/data'
+args_f.filters = 1.0
+args_f.lr = 0.001
+#args_f.resume
+args_f.disable_bn = True
+args_f.weight_decay = 0.1
+args_f.batch_size = 128
+args_f.epochs = 5
+args_f.forget_class = '1,2'
+args_f.num_to_forget = 10
+args_f.seed = 3
+args_f.split = 'forget'
 
-'''
-%run main.py 
-    --dataset small_lacuna6 
-    --model allcnn 
-    --dataroot=data/lacuna10/ 
-    --filters 1.0 
-    --lr 0.001 \
-    --resume checkpoints/lacuna100_allcnn_1_0_forget_None_lr_0_1_bs_128_ls_ce_wd_0_0005_seed_1_30.pt 
-    --disable-bn \
-    --weight-decay 0.1 
-    --batch-size 128 
-    --epochs 31 
-    --seed 3
-'''
+# Running the train function on both model versions
+#_, _ = train(args)
+model, train_loader = train(args_f)
+
+class_to_forget = [1, 2]
+num_to_forget = 10
+args_f.retain_bs = 32
+args_f.forget_bs = 64
+
+# Splitting the dataset into retain and forget sets
+forget_loader, retain_loader = split_dataset_for_forgetting(dataset = args_f.dataset, class_to_forget=class_to_forget, 
+                                                            num_to_forget=num_to_forget, args=args_f, seed=args_f.seed)
+# Loading checkpoint file
+training_epochs=4
+model, model0, model_initial, teacher, student = load_pretrained_models(model=model, args=args_f, train_loader=train_loader, training_epochs=training_epochs)
+
+# APPLYING SCRUB UNLEARNING
+
+
