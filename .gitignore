@@ -37,6 +37,7 @@ events.out.tfevents*
 data/
 dataset/
 cache/
+checkpoints/
 *.csv
 *.json
 *.npz
