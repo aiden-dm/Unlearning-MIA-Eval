@@ -5,6 +5,8 @@ import time
 import argparse
 import copy
 from collections import Counter
+from matplotlib import pyplot as plt
+from copy import deepcopy
 
 # Torch Imports
 import torch
@@ -62,6 +64,8 @@ def run_epoch(args, model, model_init, train_loader, logger, criterion=torch.nn.
             if args.lossfn=='mse':
                 target=(2*target-1)
                 target = target.type(torch.cuda.FloatTensor).unsqueeze(1)
+            elif args.lossfn=='ce':
+                target=target.long()
                 
             if 'mnist' in args.dataset:
                 data=data.view(data.shape[0],-1)
@@ -211,7 +215,7 @@ def train(args):                 # based on SCRUB main.py
     print(f'Pure training time: {train_time} sec')
 
     # Return statements
-    return model, train_loader
+    return model, train_loader, valid_loader
 
 def get_default_args():
     parser = argparse.ArgumentParser()
@@ -263,6 +267,18 @@ def get_default_args():
     parser.add_argument('--quiet', action='store_true', default=False, help='Suppress output')
     parser.add_argument('--print_freq', type=int, default=500, help='Print frequency during training')
 
+    # Optimization parameters
+    parser.add_argument('--optim', type=str, default='adam', help='Optimizer type')
+    parser.add_argument('--gamma', type=float, default=1, help='Gamma value for learning rate scheduling')
+    parser.add_argument('--alpha', type=float, default=0.5, help='Alpha value for optimization')
+    parser.add_argument('--beta', type=float, default=0, help='Beta value for optimization')
+    parser.add_argument('--smoothing', type=float, default=0.5, help='Label smoothing factor')
+    parser.add_argument('--msteps', type=int, default=3, help='Number of m-steps for optimization')
+    parser.add_argument('--clip', type=float, default=0.2, help='Gradient clipping threshold')
+    parser.add_argument('--sstart', type=int, default=10, help='Start epoch for a specific strategy')
+    parser.add_argument('--kd_T', type=int, default=2, help='Temperature for knowledge distillation')
+    parser.add_argument('--distill', type=str, default='kd', help='Distillation method')
+
     args = parser.parse_args([])  # Provide an empty list to get default values
     return args
 
@@ -312,23 +328,7 @@ def split_dataset_for_forgetting(dataset, class_to_forget, num_to_forget, args, 
     return forget_loader, retain_loader
 
 def load_pretrained_models(model, args, train_loader, training_epochs):
-    """
-    Loads pre-trained models from checkpoint files, creates copies for teacher-student learning,
-    and prepares models for further training.
-    
-    Args:
-        model (torch.nn.Module): The neural network model to load weights into.
-        args (argparse.Namespace): Arguments containing model parameters.
-        train_loader (torch.utils.data.DataLoader): Training data loader.
-        training_epochs (int): Number of training epochs (used in checkpoint naming).
-    
-    Returns:
-        model (torch.nn.Module): The loaded model (before forgetting).
-        model0 (torch.nn.Module): The loaded model (after forgetting).
-        model_initial (torch.nn.Module): The initial model before training.
-        teacher (torch.nn.Module): A copy of the model used for distillation.
-        student (torch.nn.Module): A copy of the model used for further training.
-    """
+
     # Create deep copies of the model to store different versions
     model0 = copy.deepcopy(model)  # Model after forgetting
     model_initial = copy.deepcopy(model)  # Initial model before any training
@@ -380,59 +380,152 @@ def load_pretrained_models(model, args, train_loader, training_epochs):
         p.data0 = p.data.clone()
 
     return model, model0, model_initial, teacher, student
+
+def train_and_scrub(teacher, student, retain_loader, forget_loader, args_f):
+    
+    # Deep copy models
+    model_t = copy.deepcopy(teacher)
+    model_s = copy.deepcopy(student)
+
+    # Module lists
+    module_list = nn.ModuleList([model_s])
+    trainable_list = nn.ModuleList([model_s])
+
+    # Define loss functions
+    criterion_cls = nn.CrossEntropyLoss()
+    criterion_div = DistillKL(args_f.kd_T)
+    criterion_kd = DistillKL(args_f.kd_T)
+
+    criterion_list = nn.ModuleList([criterion_cls, criterion_div, criterion_kd])
+
+    # Define optimizer
+    if args_f.optim == "sgd":
+        optimizer = optim.SGD(trainable_list.parameters(),
+                              lr=args_f.sgda_learning_rate,
+                              momentum=args_f.sgda_momentum,
+                              weight_decay=args_f.sgda_weight_decay)
+    elif args_f.optim == "adam":
+        optimizer = optim.Adam(trainable_list.parameters(),
+                               lr=args_f.sgda_learning_rate,
+                               weight_decay=args_f.sgda_weight_decay)
+    elif args_f.optim == "rmsp":
+        optimizer = optim.RMSprop(trainable_list.parameters(),
+                                  lr=args_f.sgda_learning_rate,
+                                  momentum=args_f.sgda_momentum,
+                                  weight_decay=args_f.sgda_weight_decay)
+
+    # Add teacher model to the module list
+    module_list.append(model_t)
+
+    # Track accuracy
+    acc_rs, acc_fs = [], []
+
+    # Training loop
+    for epoch in range(1, args_f.sgda_epochs + 1):
+        lr = sgda_adjust_learning_rate(epoch, args_f, optimizer)
+        print("==> Scrub unlearning ...")
+
+        # Validate on retained and forgotten data
+        acc_r, _, _ = validate(retain_loader, model_s, criterion_cls, args_f, True)
+        acc_f, _, _ = validate(forget_loader, model_s, criterion_cls, args_f, True)
+
+        acc_rs.append(100 - acc_r.item())
+        acc_fs.append(100 - acc_f.item())
+
+        # Train model
+        maximize_loss = 0
+        if epoch <= args_f.msteps:
+            maximize_loss = train_distill(epoch, forget_loader, module_list, None, criterion_list, optimizer, args_f, "maximize")
+
+        train_acc, train_loss = train_distill(epoch, retain_loader, module_list, None, criterion_list, optimizer, args_f, "minimize")
+
+        print(f"Epoch {epoch}: maximize loss: {maximize_loss:.2f}, minimize loss: {train_loss:.2f}, train_acc: {train_acc}")
+
+    # Plot results
+    plt.plot(range(len(acc_rs)), acc_rs, marker='*', alpha=1, label='retain-set')
+    plt.plot(range(len(acc_fs)), acc_fs, marker='o', alpha=1, label='forget-set')
+    plt.legend(prop={'size': 14})
+    plt.tick_params(labelsize=12)
+    plt.title('Scrub retain- and forget-set error', size=18)
+    plt.xlabel('Epoch', size=14)
+    plt.ylabel('Error', size=14)
+    plt.show()
+
+
+
 #-------------------------------------------------------------------#
 
 # PRE-TRAINING
 
-# Define namespace for arguments
+# Define common arguments
 args = get_default_args()
-args_f = get_default_args()
-
-# Initialize before parameters
 args.dataset = 'small_cifar6'
 args.model = 'allcnn'
 args.root = 'data/'
 args.filters = 1.0
 args.lr = 0.001
-#args.resume = 'checkpoints/small_cifar6_0.pt'
-args.diable_bn = True
+args.disable_bn = True
 args.weight_decay = 0.1
 args.batch_size = 128
 args.epochs = 5
 args.seed = 3
+args.retain_bs = 32
+args.forget_bs = 64
 
-# Initialize forget parameters
-args_f.dataset = 'small_cifar6'
-args_f.model = 'allcnn'
-args_f.root = '/data'
-args_f.filters = 1.0
-args_f.lr = 0.001
-#args_f.resume
-args_f.disable_bn = True
-args_f.weight_decay = 0.1
-args_f.batch_size = 128
-args_f.epochs = 5
+# Create a copy for forgetting phase and modify only necessary fields
+args_f = deepcopy(args)
 args_f.forget_class = '1,2'
-args_f.num_to_forget = 10
-args_f.seed = 3
+args_f.num_to_forget = None
 args_f.split = 'forget'
 
-# Running the train function on both model versions
-#_, _ = train(args)
-model, train_loader = train(args_f)
+# Train model on the full dataset
+model, train_loader, test_loader = train(args)
 
-class_to_forget = [1, 2]
-num_to_forget = 10
-args_f.retain_bs = 32
-args_f.forget_bs = 64
+# Train model with forget classes omitted
+model_f, train_loader_f, test_loader_f = train(args_f)
 
-# Splitting the dataset into retain and forget sets
-forget_loader, retain_loader = split_dataset_for_forgetting(dataset = args_f.dataset, class_to_forget=class_to_forget, 
-                                                            num_to_forget=num_to_forget, args=args_f, seed=args_f.seed)
-# Loading checkpoint file
-training_epochs=4
-model, model0, model_initial, teacher, student = load_pretrained_models(model=model, args=args_f, train_loader=train_loader, training_epochs=training_epochs)
+# Split dataset into retain & forget sets
+forget_loader, retain_loader = split_dataset_for_forgetting(
+    dataset=args.dataset,
+    class_to_forget=[1, 2],
+    num_to_forget=args_f.num_to_forget,
+    args=args,
+    seed=args.seed
+)
+
+# Load pre-trained models
+training_epochs = 4
+model, model0, model_initial, teacher, student = load_pretrained_models(
+    model=model, 
+    args=args_f, 
+    train_loader=train_loader, 
+    training_epochs=training_epochs
+)
 
 # APPLYING SCRUB UNLEARNING
 
+# Adding additional arguments
+args.optim = 'adam'
+args.gamma = 1
+args.alpha = 0.5
+args.beta = 0
+args.smoothing = 0.5
+args.msteps = 3
+args.clip = 0.2
+args.sstart = 10
+args.kd_T = 2
+args.distill = 'kd'
+
+# SGDA parameters
+args.sgda_epochs = 10
+args.sgda_learning_rate = 0.0005
+args.lr_decay_epochs = [5, 8, 9]
+args.lr_decay_rate = 0.1
+args.sgda_weight_decay = 0.1
+args.sgda_momentum = 0.9
+
+# Perform SCRUB unlearning
+train_and_scrub(teacher, student, retain_loader, forget_loader, args)
+
+# EVALUATING UNLEARNING
 
