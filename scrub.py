@@ -37,67 +37,54 @@ def l2_penalty(model,model_init,weight_decay):
     l2_loss *= (weight_decay/2.)
     return l2_loss
 
-def run_epoch(args, model, model_init, train_loader, criterion=torch.nn.CrossEntropyLoss(), optimizer=None, scheduler=None, epoch=0, weight_decay=0.0, mode='train', quiet=False):
+def run_epoch(args, model, model_init, train_loader, logger, criterion=torch.nn.CrossEntropyLoss(), optimizer=None, scheduler=None, epoch=0, weight_decay=0.0, mode='train', quiet=False):
     
-    # Set model mode: training, evaluation, or dry-run
     if mode == 'train':
         model.train()
-    elif mode in ['test', 'dry_run']:
+    elif mode == 'test':
         model.eval()
-        if mode == 'dry_run':
-            set_batchnorm_mode(model, train=True)  # Enable batch norm updates
+    elif mode == 'dry_run':
+        model.eval()
+        set_batchnorm_mode(model, train=True)
     else:
-        raise ValueError("Invalid mode. Choose from 'train', 'test', or 'dry_run'.")
-
-    # Disable batch normalization if specified
+        raise ValueError("Invalid mode.")
+    
     if args.disable_bn:
         set_batchnorm_mode(model, train=False)
-
-    # Adjust loss scaling factor for Mean Squared Error (MSE) loss
-    loss_multiplier = 0.5 if args.lossfn == 'mse' else 1
-
-    # Initialize metrics tracker
+    
+    mult=0.5 if args.lossfn=='mse' else 1
     metrics = AverageMeter()
 
-    # Enable gradient computation only during training
     with torch.set_grad_enabled(mode != 'test'):
         for batch_idx, (data, target) in enumerate(train_loader):
-            # Move data and target to the specified device (GPU or CPU)
             data, target = data.to(args.device), target.to(args.device)
-
-            # Adjust target format for MSE loss
-            if args.lossfn == 'mse':
-                target = (2 * target - 1).type(torch.cuda.FloatTensor).unsqueeze(1)
-
-            # Flatten data for MNIST dataset
+            
+            if args.lossfn=='mse':
+                target=(2*target-1)
+                target = target.type(torch.cuda.FloatTensor).unsqueeze(1)
+                
             if 'mnist' in args.dataset:
-                data = data.view(data.shape[0], -1)
-
-            # Forward pass
+                data=data.view(data.shape[0],-1)
+                
             output = model(data)
-
-            # Compute loss with L2 penalty
-            loss = loss_multiplier * criterion(output, target) + l2_penalty(model, model_init, weight_decay)
-
-            # Apply L1 regularization if enabled
+            loss = mult*criterion(output, target) + l2_penalty(model,model_init,weight_decay)
+            
             if args.l1:
-                l1_loss = sum(p.norm(1) for p in model.parameters())
-                loss += weight_decay * l1_loss
+                l1_loss = sum([p.norm(1) for p in model.parameters()])
+                loss += args.weight_decay * l1_loss
 
-            # Update metrics if logging is enabled
-            if not quiet:
+            if ~quiet:
                 metrics.update(n=data.size(0), loss=loss.item(), error=get_error(output, target))
-
-            # Backpropagation and optimization step (only in training mode)
+            
             if mode == 'train':
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
-
-    # Log metrics and print learning rate
+    
     log_metrics(mode, metrics, epoch)
-    print(f'Learning Rate: {optimizer.param_groups[0]["lr"]}')
-
+    logger.append('train' if mode=='train' else 'test', epoch=epoch, loss=metrics.avg['loss'], error=metrics.avg['error'], 
+                  lr=optimizer.param_groups[0]['lr'])
+    print('Learning Rate : {}'.format(optimizer.param_groups[0]['lr']))
     return metrics
 
 def train(args):                 # based on SCRUB main.py
@@ -207,15 +194,15 @@ def train(args):                 # based on SCRUB main.py
     for epoch in range(args.epochs):
         adjust_learning_rate(args, optimizer, epoch)
         t1 = time.time()
-        run_epoch(args, model, model_init, train_loader, criterion, optimizer, scheduler, epoch, weight_decay, mode='train', quiet=args.quiet)
+        run_epoch(args, model, model_init, train_loader, logger, criterion, optimizer, scheduler, epoch, weight_decay, mode='train', quiet=args.quiet)
         t2 = time.time()
         train_time += np.round(t2 - t1, 2)
         
         # Periodic validation and checkpointing
         if epoch % 500000 == 0:
             if not args.disable_bn:
-                run_epoch(args, model, model_init, train_loader, criterion, optimizer, scheduler, epoch, weight_decay, mode='dry_run')
-            run_epoch(args, model, model_init, test_loader, criterion, optimizer, scheduler, epoch, weight_decay, mode='test')
+                run_epoch(args, model, model_init, train_loader, logger, criterion, optimizer, scheduler, epoch, weight_decay, mode='dry_run')
+            run_epoch(args, model, model_init, test_loader, logger, criterion, optimizer, scheduler, epoch, weight_decay, mode='test')
         if epoch % 1 == 0:
             torch.save(model.state_dict(), f"checkpoints/{args.name}_{epoch}.pt")
         
