@@ -27,8 +27,8 @@ from Third_Party_Code.SCRUB.thirdparty.repdistiller.helper.loops import train_di
 from Third_Party_Code.SCRUB.thirdparty.repdistiller.distiller_zoo import DistillKL
 
 # My own imports from my code
-from evaluate import all_readouts
-from train import get_default_args, train
+from Unlearning_Models.evaluate import all_readouts
+from Unlearning_Models.train import get_default_args, train
 
 def split_dataset_for_forgetting(dataset, class_to_forget, num_to_forget, args, seed=1):
     
@@ -171,7 +171,7 @@ def train_and_scrub(teacher, student, retain_loader, forget_loader, valid_loader
 
     # Training loop
     for epoch in range(1, args_f.sgda_epochs + 1):
-        lr = sgda_adjust_learning_rate(epoch, args_f, optimizer)
+        #lr = sgda_adjust_learning_rate(epoch, args_f, optimizer)
         print("==> Scrub unlearning ...")
 
         # Validate on retained and forgotten data
@@ -208,7 +208,6 @@ def train_and_scrub(teacher, student, retain_loader, forget_loader, valid_loader
     acc_fvs.append(100-acc_fv.item())
 
     # Plotting results
-    '''
     indices = list(range(0,len(acc_rs)))
     plt.plot(indices, acc_rs, marker='*', color=u'#1f77b4', alpha=1, label='retain-set')
     plt.plot(indices, acc_fs, marker='o', color=u'#ff7f0e', alpha=1, label='forget-set')
@@ -220,7 +219,6 @@ def train_and_scrub(teacher, student, retain_loader, forget_loader, valid_loader
     plt.ylabel('error',size=14)
     plt.grid()
     plt.show()
-    '''
 
     '''
     # Plot results
