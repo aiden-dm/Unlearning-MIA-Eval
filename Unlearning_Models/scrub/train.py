@@ -4,7 +4,6 @@ import os
 import time
 import argparse
 import copy
-from collections import Counter
 from matplotlib import pyplot as plt
 from copy import deepcopy
 
@@ -13,17 +12,16 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-# Adding SCRUB repository to system path
-sys.path.append(os.path.abspath("Third_Party_Code/SCRUB"))
+# Adding the SCRUB repo to the system path
+SCRUB_PATH = os.path.abspath("../../Third_Party_Code/SCRUB")
+if SCRUB_PATH not in sys.path:
+    sys.path.append(SCRUB_PATH)
 
 # Direct imports from the SCRUB repository
 from Third_Party_Code.SCRUB import datasets
 from Third_Party_Code.SCRUB.utils import *
 from Third_Party_Code.SCRUB import models
 from Third_Party_Code.SCRUB.logger import Logger
-from Third_Party_Code.SCRUB.thirdparty.repdistiller.helper.util import adjust_learning_rate as sgda_adjust_learning_rate
-from Third_Party_Code.SCRUB.thirdparty.repdistiller.helper.loops import train_distill, validate
-from Third_Party_Code.SCRUB.thirdparty.repdistiller.distiller_zoo import DistillKL
 
 def adjust_learning_rate(args, optimizer, epoch):
     if args.step_size is not None:lr = args.lr * 0.1 ** (epoch//args.step_size)
@@ -207,15 +205,12 @@ def train(args):                 # based on SCRUB main.py
             if not args.disable_bn:
                 run_epoch(args, model, model_init, train_loader, logger, criterion, optimizer, scheduler, epoch, weight_decay, mode='dry_run')
             run_epoch(args, model, model_init, test_loader, logger, criterion, optimizer, scheduler, epoch, weight_decay, mode='test')
-        if epoch % 1 == 0:
+        if epoch == args.epochs-1:
             torch.save(model.state_dict(), f"checkpoints/{args.name}_{epoch}.pt")
         
         print(f'Epoch Time: {np.round(time.time() - t1, 2)} sec')
 
     print(f'Pure training time: {train_time} sec')
-
-    # Return statements
-    return model, train_loader, valid_loader
 
 def get_default_args():
     parser = argparse.ArgumentParser()
@@ -281,251 +276,3 @@ def get_default_args():
 
     args = parser.parse_args([])  # Provide an empty list to get default values
     return args
-
-def split_dataset_for_forgetting(dataset, class_to_forget, num_to_forget, args, seed=1):
-    
-    # Load the full dataset (training, validation, and test sets)
-    train_loader_full, valid_loader_full, test_loader_full = datasets.get_loaders(
-        dataset, batch_size=args.batch_size, seed=seed, root=args.dataroot, augment=False, shuffle=True
-    )
-
-    # Load the dataset but mark the samples that need to be forgotten
-    marked_loader, _, _ = datasets.get_loaders(
-        dataset, class_to_replace=class_to_forget, num_indexes_to_replace=num_to_forget, only_mark=True, 
-        batch_size=1, seed=seed, root=args.dataroot, augment=False, shuffle=True
-    )
-
-    def replace_loader_dataset(dataset, batch_size, seed, shuffle=True):
-        """
-        Creates a new DataLoader for a given dataset.
-        """
-        torch.manual_seed(seed)  # Ensure reproducibility
-        return torch.utils.data.DataLoader(
-            dataset, batch_size=batch_size, num_workers=0, pin_memory=True, shuffle=shuffle
-        )
-
-    # Create a deep copy of the marked dataset to isolate the samples to forget
-    forget_dataset = copy.deepcopy(marked_loader.dataset)
-    marked = forget_dataset.targets < 0  # Identify samples marked for forgetting
-    forget_dataset.data = forget_dataset.data[marked]
-    forget_dataset.targets = - forget_dataset.targets[marked] - 1  # Restore original labels
-
-    # Create DataLoader for the forget dataset
-    forget_loader = replace_loader_dataset(forget_dataset, batch_size=args.forget_bs, seed=seed, shuffle=True)
-
-    # Create a deep copy of the marked dataset to retain the remaining samples
-    retain_dataset = copy.deepcopy(marked_loader.dataset)
-    marked = retain_dataset.targets >= 0  # Identify samples to retain
-    retain_dataset.data = retain_dataset.data[marked]
-    retain_dataset.targets = retain_dataset.targets[marked]
-
-    # Create DataLoader for the retain dataset
-    retain_loader = replace_loader_dataset(retain_dataset, batch_size=args.retain_bs, seed=seed, shuffle=True)
-
-    # Ensure the split was performed correctly
-    assert len(forget_dataset) + len(retain_dataset) == len(train_loader_full.dataset)
-
-    return forget_loader, retain_loader
-
-def load_pretrained_models(model, args, train_loader, training_epochs):
-
-    # Create deep copies of the model to store different versions
-    model0 = copy.deepcopy(model)  # Model after forgetting
-    model_initial = copy.deepcopy(model)  # Initial model before any training
-
-    # Extract arguments for model configuration
-    arch = args.model  # Model architecture
-    filters = args.filters  # Number of filters in CNN (if applicable)
-    arch_filters = arch + '_' + str(filters).replace('.', '_')  # Format architecture name
-    dataset = args.dataset  # Dataset name
-    class_to_forget = args.forget_class  # Class to forget
-    init_checkpoint = f"checkpoints/{args.name}_init.pt"  # Path to initial model checkpoint
-    num_to_forget = args.num_to_forget  # Number of samples to forget
-    num_total = len(train_loader.dataset)  # Total number of samples
-    num_to_retain = num_total - 300  # Retaining remaining samples (may be modified)
-    seed = args.seed  # Random seed
-    unfreeze_start = None  # Placeholder for unfreezing layers
-
-    # Formatting hyperparameter tags for checkpoint filenames
-    learningrate = f"lr_{str(args.lr).replace('.', '_')}"
-    batch_size = f"_bs_{str(args.batch_size)}"
-    lossfn = f"_ls_{args.lossfn}"
-    wd = f"_wd_{str(args.weight_decay).replace('.', '_')}"
-    seed_name = f"_seed_{args.seed}_"
-    num_tag = '' if num_to_forget is None else f'_num_{num_to_forget}'
-    unfreeze_tag = '_' if unfreeze_start is None else f'_unfreeze_from_{unfreeze_start}_'
-    augment_tag = '' if not False else f'augment_'
-
-    # Define checkpoint filenames
-    m_name = f'checkpoints/{dataset}_{arch_filters}_forget_None{unfreeze_tag}{augment_tag}{learningrate}{batch_size}{lossfn}{wd}{seed_name}{training_epochs}.pt'
-    m0_name = f'checkpoints/{dataset}_{arch_filters}_forget_{class_to_forget}{num_tag}{unfreeze_tag}{augment_tag}{learningrate}{batch_size}{lossfn}{wd}{seed_name}{training_epochs}.pt'
-
-    # Load pre-trained weights into models
-    model.load_state_dict(torch.load(m_name))  # Model before forgetting
-    model0.load_state_dict(torch.load(m0_name))  # Model after forgetting
-    model_initial.load_state_dict(torch.load(init_checkpoint))  # Initial model before training
-
-    # Create teacher and student models for knowledge distillation
-    teacher = copy.deepcopy(model)
-    student = copy.deepcopy(model)
-
-    # Move models to GPU if available
-    model.cuda()
-    model0.cuda()
-
-    # Store initial parameter copies for potential weight updates
-    for p in model.parameters():
-        p.data0 = p.data.clone()
-    for p in model0.parameters():
-        p.data0 = p.data.clone()
-
-    return model, model0, model_initial, teacher, student
-
-def train_and_scrub(teacher, student, retain_loader, forget_loader, args_f):
-    
-    # Deep copy models
-    model_t = copy.deepcopy(teacher)
-    model_s = copy.deepcopy(student)
-
-    # Module lists
-    module_list = nn.ModuleList([model_s])
-    trainable_list = nn.ModuleList([model_s])
-
-    # Define loss functions
-    criterion_cls = nn.CrossEntropyLoss()
-    criterion_div = DistillKL(args_f.kd_T)
-    criterion_kd = DistillKL(args_f.kd_T)
-
-    criterion_list = nn.ModuleList([criterion_cls, criterion_div, criterion_kd])
-
-    # Define optimizer
-    if args_f.optim == "sgd":
-        optimizer = optim.SGD(trainable_list.parameters(),
-                              lr=args_f.sgda_learning_rate,
-                              momentum=args_f.sgda_momentum,
-                              weight_decay=args_f.sgda_weight_decay)
-    elif args_f.optim == "adam":
-        optimizer = optim.Adam(trainable_list.parameters(),
-                               lr=args_f.sgda_learning_rate,
-                               weight_decay=args_f.sgda_weight_decay)
-    elif args_f.optim == "rmsp":
-        optimizer = optim.RMSprop(trainable_list.parameters(),
-                                  lr=args_f.sgda_learning_rate,
-                                  momentum=args_f.sgda_momentum,
-                                  weight_decay=args_f.sgda_weight_decay)
-
-    # Add teacher model to the module list
-    module_list.append(model_t)
-
-    # Track accuracy
-    acc_rs, acc_fs = [], []
-
-    # Training loop
-    for epoch in range(1, args_f.sgda_epochs + 1):
-        lr = sgda_adjust_learning_rate(epoch, args_f, optimizer)
-        print("==> Scrub unlearning ...")
-
-        # Validate on retained and forgotten data
-        acc_r, _, _ = validate(retain_loader, model_s, criterion_cls, args_f, True)
-        acc_f, _, _ = validate(forget_loader, model_s, criterion_cls, args_f, True)
-
-        acc_rs.append(100 - acc_r.item())
-        acc_fs.append(100 - acc_f.item())
-
-        # Train model
-        maximize_loss = 0
-        if epoch <= args_f.msteps:
-            maximize_loss = train_distill(epoch, forget_loader, module_list, None, criterion_list, optimizer, args_f, "maximize")
-
-        train_acc, train_loss = train_distill(epoch, retain_loader, module_list, None, criterion_list, optimizer, args_f, "minimize")
-
-        print(f"Epoch {epoch}: maximize loss: {maximize_loss:.2f}, minimize loss: {train_loss:.2f}, train_acc: {train_acc}")
-
-    # Plot results
-    plt.plot(range(len(acc_rs)), acc_rs, marker='*', alpha=1, label='retain-set')
-    plt.plot(range(len(acc_fs)), acc_fs, marker='o', alpha=1, label='forget-set')
-    plt.legend(prop={'size': 14})
-    plt.tick_params(labelsize=12)
-    plt.title('Scrub retain- and forget-set error', size=18)
-    plt.xlabel('Epoch', size=14)
-    plt.ylabel('Error', size=14)
-    plt.show()
-
-
-
-#-------------------------------------------------------------------#
-
-# PRE-TRAINING
-
-# Define common arguments
-args = get_default_args()
-args.dataset = 'small_cifar6'
-args.model = 'allcnn'
-args.root = 'data/'
-args.filters = 1.0
-args.lr = 0.001
-args.disable_bn = True
-args.weight_decay = 0.1
-args.batch_size = 128
-args.epochs = 5
-args.seed = 3
-args.retain_bs = 32
-args.forget_bs = 64
-
-# Create a copy for forgetting phase and modify only necessary fields
-args_f = deepcopy(args)
-args_f.forget_class = '1,2'
-args_f.num_to_forget = None
-args_f.split = 'forget'
-
-# Train model on the full dataset
-model, train_loader, test_loader = train(args)
-
-# Train model with forget classes omitted
-model_f, train_loader_f, test_loader_f = train(args_f)
-
-# Split dataset into retain & forget sets
-forget_loader, retain_loader = split_dataset_for_forgetting(
-    dataset=args.dataset,
-    class_to_forget=[1, 2],
-    num_to_forget=args_f.num_to_forget,
-    args=args,
-    seed=args.seed
-)
-
-# Load pre-trained models
-training_epochs = 4
-model, model0, model_initial, teacher, student = load_pretrained_models(
-    model=model, 
-    args=args_f, 
-    train_loader=train_loader, 
-    training_epochs=training_epochs
-)
-
-# APPLYING SCRUB UNLEARNING
-
-# Adding additional arguments
-args.optim = 'adam'
-args.gamma = 1
-args.alpha = 0.5
-args.beta = 0
-args.smoothing = 0.5
-args.msteps = 3
-args.clip = 0.2
-args.sstart = 10
-args.kd_T = 2
-args.distill = 'kd'
-
-# SGDA parameters
-args.sgda_epochs = 10
-args.sgda_learning_rate = 0.0005
-args.lr_decay_epochs = [5, 8, 9]
-args.lr_decay_rate = 0.1
-args.sgda_weight_decay = 0.1
-args.sgda_momentum = 0.9
-
-# Perform SCRUB unlearning
-train_and_scrub(teacher, student, retain_loader, forget_loader, args)
-
-# EVALUATING UNLEARNING
-
