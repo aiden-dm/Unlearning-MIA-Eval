@@ -1,12 +1,9 @@
 # Imports
 import copy
-import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import Subset
 import os
 import sys
-import numpy as np
 import matplotlib.pyplot as plt
 from types import SimpleNamespace
 
@@ -164,7 +161,6 @@ def scrub(model, loaders):
     #model_s.load_state_dict(torch.load(selected_model))
     
     return model_s, model_s_final
-
 
 model = load_model("./checkpoints/resnet_full.pt")
 loaders = get_loaders(root='./data', forget_classes=[1])
