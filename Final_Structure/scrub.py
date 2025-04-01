@@ -40,15 +40,6 @@ def scrub(model, loaders):
     sgda_epochs = 10
     msteps = 3
 
-    '''
-    args.sgda_epochs = 10
-    args.sgda_learning_rate = 0.0005
-    args.lr_decay_epochs = [5,8,9]
-    args.lr_decay_rate = 0.1
-    args.sgda_weight_decay = 0.1#5e-4
-    args.sgda_momentum = 0.9
-    '''
-
     # Define teacher and student models
     model_t = copy.deepcopy(model)
     model_s = copy.deepcopy(model)
@@ -86,19 +77,6 @@ def scrub(model, loaders):
     t_opt.gamma = 1
     t_opt.print_freq = 1
     #t_opt.clip_grad
-
-    '''
-    args.optim = 'adam'
-    args.gamma = 1
-    args.alpha = 0.5
-    args.beta = 0
-    args.smoothing = 0.5
-    args.msteps = 3
-    args.clip = 0.2
-    args.sstart = 10
-    args.kd_T = 2
-    args.distill = 'kd'
-    '''
 
     # Training loop
     for epoch in range(1, sgda_epochs + 1):
