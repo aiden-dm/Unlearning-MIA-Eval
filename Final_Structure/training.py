@@ -3,6 +3,10 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torchvision.models as models
+import sys
+
+# Adding the local files to the system path
+sys.path.append('/content/Unlearning-MIA-Eval/Final_Structure')
 
 # Our local imports
 from datasets import get_loaders
