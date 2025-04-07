@@ -22,9 +22,9 @@ def ssd(model, loaders, args):
     unlearning_teacher = load_model("/content/Unlearning-MIA-Eval/Final_Structure/checkpoints/resnet_retain.pt")
     full_trained_teacher = load_model("/content/Unlearning-MIA-Eval/Final_Structure/checkpoints/resnet_full.pt")
 
-    epochs = args.epochs,
-    lr = args.learning_rate,
-    batch_size = args.batch_size,
+    epochs = args.epochs
+    lr = args.learning_rate
+    batch_size = args.batch_size
     KL_temperature = args.KL_temperature
 
     unl_model = blindspot_unlearner(model=model, 
