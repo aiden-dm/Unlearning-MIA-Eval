@@ -63,14 +63,16 @@ def train_resnet(root='./data',
     model = get_resnet_model()
     
     [
-        train_loader,
+        train_loader, 
+        _, 
+        _, 
+        _, 
+        train_retain_loader, 
         _,
-        _,
-        _,
-        train_retain_loader,
-        _,
+        _, 
+        _, 
         _
-    ] = get_loaders(root, forget_classes, batch_size)
+    ] = get_loaders(root, forget_classes)
 
     # Define some training variables
     criterion = nn.CrossEntropyLoss()
