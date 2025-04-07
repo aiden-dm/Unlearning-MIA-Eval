@@ -8,7 +8,7 @@ import torch
 sys.path.append('/content/Unlearning-MIA-Eval')
 
 # Import from our local files
-from Final_Structure.training import load_model, get_loaders
+from Final_Structure.training import load_model
 
 # Imports from the BadTeach GitHub repository
 from Third_Party_Code.SSD.src.unlearn import blindspot_unlearner
@@ -32,5 +32,4 @@ def ssd(loaders):
     save_path = "/content/Unlearning-MIA-Eval/Final_Structure/checkpoints/ssd_applied.pt"
     torch.save(unl_model.state_dict(), save_path)
 
-loaders = get_loaders(root='/content/Unlearning-MIA-Eval/Final_Structure/data', forget_classes=[1])
-ssd(loaders)
+    return unl_model

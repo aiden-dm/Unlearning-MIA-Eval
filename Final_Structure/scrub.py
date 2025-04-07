@@ -10,14 +10,11 @@ import torch
 # Adding necessary paths to the system path
 sys.path.append('/content/Unlearning-MIA-Eval')
 
-# Import from our local files
-from Final_Structure.training import load_model, get_loaders
-
 # Imports from the SCRUB repository
 from Third_Party_Code.SCRUB.thirdparty.repdistiller.distiller_zoo import DistillKL
 from Third_Party_Code.SCRUB.thirdparty.repdistiller.helper.loops import train_distill, validate
 
-def scrub(model, loaders):
+def scrub(model, loaders, args):
 
     # Extracting the loaders that we want
     valid_loader = loaders[1]
@@ -26,11 +23,11 @@ def scrub(model, loaders):
     valid_forget_loader = loaders[5]
 
     # Defining hyperparameters
-    kd_T = 2
-    sgda_learning_rate = 0.0005
-    sgda_weight_decay = 0.1
-    sgda_epochs = 10
-    msteps = 3
+    kd_T = args.kd_T
+    sgda_learning_rate = args.sgda_learning_rate
+    sgda_weight_decay = args.sgda_weight_decay
+    sgda_epochs = args.sgda_epochs
+    msteps = args.msteps
 
     # Define teacher and student models
     model_t = copy.deepcopy(model)
@@ -59,16 +56,15 @@ def scrub(model, loaders):
 
     # Define validate args
     v_opt = SimpleNamespace()
-    v_opt.print_freq = 1
+    v_opt.print_freq = args.v_opt_print_freq
 
     # Define train distill args
     t_opt = SimpleNamespace()
-    t_opt.distill = 'kd'
-    t_opt.alpha = 0.5
-    t_opt.beta = 0
-    t_opt.gamma = 1
-    t_opt.print_freq = 1
-    #t_opt.clip_grad
+    t_opt.distill = args.t_opt_distill
+    t_opt.alpha = args.t_opt_alpha
+    t_opt.beta = args.t_opt_beta
+    t_opt.gamma = args.t_opt_gamma
+    t_opt.print_freq = args.t_opt_print_freq
 
     # Training loop
     print("PERFROMING SCRUB UNLEARNING...")
@@ -123,7 +119,4 @@ def scrub(model, loaders):
     save_path = "/content/Unlearning-MIA-Eval/Final_Structure/checkpoints/scrub_applied.pt"
     torch.save(model_s.state_dict(), save_path)
 
-# Running the scrub training
-model = load_model("/content/Unlearning-MIA-Eval/Final_Structure/checkpoints/resnet_full.pt")
-loaders = get_loaders(root='/content/Unlearning-MIA-Eval/Final_Structure/data', forget_classes=[1])
-scrub(model, loaders)
+    return model_s

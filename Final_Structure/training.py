@@ -57,7 +57,8 @@ def train(model, train_loader, criterion, optimizer, epochs=10, save_path="resne
 def train_resnet(root='./data', 
                  dataset='cifar10', 
                  forget_classes=[],
-                 batch_size = 32):
+                 batch_size = 32,
+                 args=None):
     
     # Get ResNet model
     model = get_resnet_model()
@@ -69,10 +70,10 @@ def train_resnet(root='./data',
 
     # Define some training variables
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
-    epochs = 10
-    full_path = "/content/Unlearning-MIA-Eval/Final_Structure/checkpoints/resnet_full.pt"
-    retain_path = "/content/Unlearning-MIA-Eval/Final_Structure/checkpoints/resnet_retain.pt"
+    optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
+    epochs = args.epochs
+    full_path = args.full_path
+    retain_path = args.retain_path
 
     # Train on the entire train dataset
     print("Training ResNet18 model on the full dataset...")
@@ -80,7 +81,7 @@ def train_resnet(root='./data',
 
     # Reset model weights and optimizer
     model = get_resnet_model()
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
+    optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
 
     # Train on the retain set
     print("Training the ResNet model on the dataset without classes:", forget_classes)
