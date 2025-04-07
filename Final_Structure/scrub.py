@@ -2,10 +2,10 @@
 import copy
 import torch.nn as nn
 import torch.optim as optim
-import os
 import sys
 import matplotlib.pyplot as plt
 from types import SimpleNamespace
+import torch
 
 # Adding necessary paths to the system path
 sys.path.append('/content/Unlearning-MIA-Eval')
@@ -71,9 +71,9 @@ def scrub(model, loaders):
     #t_opt.clip_grad
 
     # Training loop
+    print("PERFROMING SCRUB UNLEARNING...")
     for epoch in range(1, sgda_epochs + 1):
         #lr = sgda_adjust_learning_rate(epoch, args_f, optimizer)
-        print("PERFROMING SCRUB UNLEARNING...")
 
         # Validate on retained and forgotten data
         acc_r, _, _ = validate(train_retain_loader, model_s, criterion_cls, v_opt, True)
@@ -93,8 +93,7 @@ def scrub(model, loaders):
             maximize_loss = train_distill(epoch, train_forget_loader, module_list, None, criterion_list, optimizer, t_opt, "maximize")
         train_acc, train_loss = train_distill(epoch, train_retain_loader, module_list, None, criterion_list, optimizer, t_opt, "minimize")
 
-        # Save the model to a checkpoint file
-        # WE CAN WRITE LOGIC TO SAVE A CHECKPOINT
+        # Print checkpoint progress
         print(f"Epoch {epoch}: maximize loss: {maximize_loss:.2f}, minimize loss: {train_loss:.2f}, train_acc: {train_acc}")
     
     # Saving final accuracies after training
@@ -118,19 +117,11 @@ def scrub(model, loaders):
     plt.xlabel('epoch',size=14)
     plt.ylabel('error',size=14)
     plt.grid()
-    plt.show()
-
-    # Return model information
-    try:
-        selected_idx, _ = min(enumerate(acc_fs), key=lambda x: abs(x[1]-acc_fvs[-1]))
-    except:
-        selected_idx = len(acc_fs) - 1
-    print ("the selected index is {}".format(selected_idx))
-    #selected_model = "checkpoints/scrub_{}_{}_seed{}_step{}.pt".format(args.model, args.dataset, args.seed, int(selected_idx))
-    model_s_final = copy.deepcopy(model_s)
-    #model_s.load_state_dict(torch.load(selected_model))
+    plt.savefig('/content/Unlearning-MIA-Eval/Final_Structure/checkpoints/scrub_unlearning_accuracy_plot.png', bbox_inches='tight')
     
-    return model_s, model_s_final
+    # Save a copy of the student model to use in evaluation
+    save_path = "/content/Unlearning-MIA-Eval/Final_Structure/checkpoints/scrub_applied.pt"
+    torch.save(model_s.state_dict(), save_path)
 
 # Running the scrub training
 model = load_model("/content/Unlearning-MIA-Eval/Final_Structure/checkpoints/resnet_full.pt")
