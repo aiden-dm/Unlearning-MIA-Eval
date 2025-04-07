@@ -7,13 +7,11 @@ import sys
 import matplotlib.pyplot as plt
 from types import SimpleNamespace
 
-# Adding the SCRUB repo to the system path
-SCRUB_PATH = os.path.abspath("../../Third_Party_Code/SCRUB")
-if SCRUB_PATH not in sys.path:
-    sys.path.append(SCRUB_PATH)
+# Adding necessary paths to the system path
+sys.path.append('/content/Unlearning-MIA-Eval')
 
 # Import from our local files
-from training import load_model, get_loaders
+from Final_Structure.training import load_model, get_loaders
 
 # Imports from the SCRUB repository
 from Third_Party_Code.SCRUB.thirdparty.repdistiller.distiller_zoo import DistillKL
@@ -21,17 +19,11 @@ from Third_Party_Code.SCRUB.thirdparty.repdistiller.helper.loops import train_di
 
 def scrub(model, loaders):
 
-    # Unpacking the data loaders
-    [train_loader, 
-     valid_loader, 
-     test_loader, 
-     train_forget_loader, 
-     train_retain_loader, 
-     valid_forget_loader,
-     valid_retain_loader, 
-     test_forget_loader, 
-     test_retain_loader
-    ] = loaders
+    # Extracting the loaders that we want
+    valid_loader = loaders[1]
+    train_forget_loader = loaders[3]
+    train_retain_loader = loaders[4]
+    valid_forget_loader = loaders[5]
 
     # Defining hyperparameters
     kd_T = 2
@@ -140,6 +132,7 @@ def scrub(model, loaders):
     
     return model_s, model_s_final
 
-model = load_model("./checkpoints/resnet_full.pt")
-loaders = get_loaders(root='./data', forget_classes=[1])
+# Running the scrub training
+model = load_model("/content/Unlearning-MIA-Eval/Final_Structure/checkpoints/resnet_full.pt")
+loaders = get_loaders(root='/content/Unlearning-MIA-Eval/Final_Structure/data', forget_classes=[1])
 scrub(model, loaders)
