@@ -62,24 +62,17 @@ def train_resnet(root='./data',
     # Get ResNet model
     model = get_resnet_model()
     
-    [
-        train_loader, 
-        _, 
-        _, 
-        _, 
-        train_retain_loader, 
-        _,
-        _, 
-        _, 
-        _
-    ] = get_loaders(root, forget_classes)
+    # Getting the train full and retain loaders
+    loaders = get_loaders(root, forget_classes)
+    train_loader = loaders[0]
+    train_retain_loader = loaders[4]
 
     # Define some training variables
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=0.001)
-    epochs = 1
-    full_path = "./checkpoints/resnet_full.pt"
-    retain_path = "./checkpoints/resnet_retain.pt"
+    epochs = 10
+    full_path = "/content/Unlearning-MIA-Eval/Final_Structure/checkpoints/resnet_full.pt"
+    retain_path = "/content/Unlearning-MIA-Eval/Final_Structure/checkpoints/resnet_retain.pt"
 
     # Train on the entire train dataset
     train(model, train_loader, criterion, optimizer, epochs, full_path)
