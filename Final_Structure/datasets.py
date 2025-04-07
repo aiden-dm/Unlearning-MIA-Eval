@@ -1,3 +1,4 @@
+# Imports
 import torch
 import torchvision
 import torchvision.transforms as transforms
@@ -5,6 +6,7 @@ from torch.utils.data import DataLoader, Dataset
 import numpy as np
 from PIL import Image
 
+# Function that gets transformation for the CIFAR10 set
 def _get_cifar_transforms(augment=True):
     transform_augment = transforms.Compose([
         transforms.Pad(padding=4, fill=(125,123,113)),
@@ -21,12 +23,14 @@ def _get_cifar_transforms(augment=True):
 
     return transform_train, transform_test
 
+# Function that defines the CIFAR10 set used in experiments
 def cifar10(root, augment=False):
     transform_train, transform_test = _get_cifar_transforms(augment=augment)
     train_set = torchvision.datasets.CIFAR10(root=root, train=True, download=True, transform=transform_train)
     test_set  = torchvision.datasets.CIFAR10(root=root, train=False, download=True, transform=transform_test)
     return train_set, test_set
 
+# Dataset class needed for compatibility with the 3rd party SCRUB repo
 class CustomDataset(Dataset):
     def __init__(self, data, targets, indices=None, transform=None, target_transform=None):
         if indices is not None:
@@ -104,41 +108,15 @@ def get_loaders(root, forget_classes):
     test_forget_loader = DataLoader(test_forget, batch_size=batch_size, shuffle=False, num_workers=8)
     test_retain_loader = DataLoader(test_retain, batch_size=batch_size, shuffle=False, num_workers=8)
     
-    # Printing out informaton 
-    print("Train Loader classes: ", np.unique(train_loader.dataset.targets))
-    print("Valid Loader classes: ", np.unique(valid_loader.dataset.targets))
-    print("Test Loader classes: ", np.unique(test_loader.dataset.targets))
-
-    print("Train Forget Loader classes: ", np.unique(train_forget_loader.dataset.targets))
-    print("Train Retain Loader classes: ", np.unique(train_retain_loader.dataset.targets))
-
-    print("Validation Forget Loader classes: ", np.unique(valid_forget_loader.dataset.targets))
-    print("Validation Retain Loader classes: ", np.unique(valid_retain_loader.dataset.targets))
-
-    print("Test Forget Loader classes: ", np.unique(test_forget_loader.dataset.targets))
-    print("Test Retain Loader classes: ", np.unique(test_retain_loader.dataset.targets))
-
-    # Print sizes of each DataLoader
-    print("Size of Train Loader: ", len(train_loader.dataset))
-    print("Size of Valid Loader: ", len(valid_loader.dataset))
-    print("Size of Test Loader: ", len(test_loader.dataset))
-
-    print("Size of Train Forget Loader: ", len(train_forget_loader.dataset))
-    print("Size of Train Retain Loader: ", len(train_retain_loader.dataset))
-
-    print("Size of Validation Forget Loader: ", len(valid_forget_loader.dataset))
-    print("Size of Validation Retain Loader: ", len(valid_retain_loader.dataset))
-
-    print("Size of Test Forget Loader: ", len(test_forget_loader.dataset))
-    print("Size of Test Retain Loader: ", len(test_retain_loader.dataset))
-    
-    return [train_loader, 
-            valid_loader, 
-            test_loader, 
-            train_forget_loader, 
-            train_retain_loader, 
-            valid_forget_loader,
-            valid_retain_loader, 
-            test_forget_loader, 
-            test_retain_loader
-            ]
+    # Returning all loaders
+    return [
+        train_loader, 
+        valid_loader, 
+        test_loader, 
+        train_forget_loader, 
+        train_retain_loader, 
+        valid_forget_loader,
+        valid_retain_loader, 
+        test_forget_loader, 
+        test_retain_loader
+    ]
