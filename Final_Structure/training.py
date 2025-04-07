@@ -75,10 +75,19 @@ def train_resnet(root='./data',
     retain_path = "/content/Unlearning-MIA-Eval/Final_Structure/checkpoints/resnet_retain.pt"
 
     # Train on the entire train dataset
+    print("Training ResNet18 model on the full dataset...")
     train(model, train_loader, criterion, optimizer, epochs, full_path)
 
+    # Reset model weights and optimizer
+    model = get_resnet_model()
+    optimizer = optim.Adam(model.parameters(), lr=0.001)
+
     # Train on the retain set
+    print("Training the ResNet model on the dataset without classes:", forget_classes)
     train(model, train_retain_loader, criterion, optimizer, epochs, retain_path)
+
+    # Indicate that training is finished
+    print('Training Complete!')
 
 def load_model(checkpoint_path="resnet_cifar.pt"):
     model = get_resnet_model()
