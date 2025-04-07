@@ -22,10 +22,8 @@ debug.log
 Thumbs.db
 
 # Machine Learning / Deep Learning Artifacts
-checkpoints/
 *.ckpt
 *.h5
-*.pt
 *.pth
 *.onnx
 
@@ -37,7 +35,6 @@ events.out.tfevents*
 data/
 dataset/
 cache/
-checkpoints/
 *.csv
 *.json
 *.npz
