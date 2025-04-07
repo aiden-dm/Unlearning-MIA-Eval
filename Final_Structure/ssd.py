@@ -4,39 +4,33 @@ import os
 import copy
 import torch
 
-# Adding the SCRUB repo to the system path
-SSD_PATH = os.path.abspath("../../Third_Party_Code/SSD")
-if SSD_PATH not in sys.path:
-    sys.path.append(SSD_PATH)
+# Adding necessary paths to the system path
+sys.path.append('/content/Unlearning-MIA-Eval')
 
 # Import from our local files
-from training import load_model, get_loaders
+from Final_Structure.training import load_model, get_loaders
 
 # Imports from the BadTeach GitHub repository
 from Third_Party_Code.SSD.src.unlearn import blindspot_unlearner
 
 def ssd(loaders):
     # Unpacking the data loaders
-    [train_loader, 
-     valid_loader, 
-     test_loader, 
-     train_forget_loader, 
-     train_retain_loader, 
-     valid_forget_loader,
-     valid_retain_loader, 
-     test_forget_loader, 
-     test_retain_loader
-    ] = loaders
+    train_forget_loader = loaders[3]
+    train_retain_loader = loaders[4]
 
-    model = load_model("./checkpoints/resnet_full.pt")
-    unlearning_teacher = load_model("./checkpoints/resnet_retain.pt")
-    full_trained_teacher = load_model("./checkpoints/resnet_full.pt")
+    model = load_model("/content/Unlearning-MIA-Eval/Final_Structure/checkpoints/resnet_full.pt")
+    unlearning_teacher = load_model("/content/Unlearning-MIA-Eval/Final_Structure/checkpoints/resnet_retain.pt")
+    full_trained_teacher = load_model("/content/Unlearning-MIA-Eval/Final_Structure/checkpoints/resnet_full.pt")
 
     unl_model = blindspot_unlearner(model=model, 
                                     unlearning_teacher=unlearning_teacher, 
                                     full_trained_teacher=full_trained_teacher, 
                                     retain_data=train_retain_loader.dataset, 
                                     forget_data=train_forget_loader.dataset)
+    
+    # Save a copy of the student model as a checkpoint
+    save_path = "/content/Unlearning-MIA-Eval/Final_Structure/checkpoints/ssd_applied.pt"
+    torch.save(unl_model.state_dict(), save_path)
 
-loaders = get_loaders(root='./data', forget_classes=[1])
+loaders = get_loaders(root='/content/Unlearning-MIA-Eval/Final_Structure/data', forget_classes=[1])
 ssd(loaders)
