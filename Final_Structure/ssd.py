@@ -1,6 +1,5 @@
 # Imports
 import sys
-import os
 import copy
 import torch
 
@@ -28,16 +27,14 @@ def ssd(model, loaders, args):
         valid_forget_loader
     ]
 
-    model = load_model("/content/Unlearning-MIA-Eval/Final_Structure/checkpoints/resnet_full.pt")
-    unlearning_teacher = load_model("/content/Unlearning-MIA-Eval/Final_Structure/checkpoints/resnet_retain.pt")
-    full_trained_teacher = load_model("/content/Unlearning-MIA-Eval/Final_Structure/checkpoints/resnet_full.pt")
+    unlearning_teacher = copy.deepcopy(model)
+    full_trained_teacher = copy.deepcopy(model)
+    model = model.eval()
 
     epochs = args.epochs
     lr = args.learning_rate
     batch_size = args.batch_size
     KL_temperature = args.KL_temperature
-    step_size = args.step_size
-    gamma = args.gamma
 
     unl_model, history = blindspot_unlearner(model=model, 
                                     unlearning_teacher=unlearning_teacher, 
@@ -49,8 +46,7 @@ def ssd(model, loaders, args):
                                     lr=lr,
                                     batch_size=batch_size,
                                     KL_temperature=KL_temperature,
-                                    step_size=step_size,
-                                    gamma=gamma)
+                                    print_accuracies = args.print_accuracies)
     
     # Save a copy of the student model as a checkpoint
     save_path = "/content/Unlearning-MIA-Eval/Final_Structure/checkpoints/ssd_applied.pt"

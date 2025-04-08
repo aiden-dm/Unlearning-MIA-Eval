@@ -26,9 +26,8 @@ def scrub(model, loaders, args):
 
     # Defining hyperparameters
     kd_T = args.kd_T
-    sgda_learning_rate = args.sgda_learning_rate
-    sgda_weight_decay = args.sgda_weight_decay
-    sgda_epochs = args.sgda_epochs
+    learning_rate = args.learning_rate
+    epochs = args.epochs
     msteps = args.msteps
 
     # Define teacher and student models
@@ -42,13 +41,13 @@ def scrub(model, loaders, args):
     # Define loss functions
     criterion_cls = nn.CrossEntropyLoss()
     criterion_div = DistillKL(kd_T)
-    criterion_kd = DistillKL(kd_T)
+    criterion_kd = DistillKL(kd_T)          # This doesn't do anything placeholder
     criterion_list = nn.ModuleList([criterion_cls, criterion_div, criterion_kd])
 
     # Define the optimizer
     optimizer = optim.Adam(trainable_list.parameters(),
-                               lr=sgda_learning_rate,
-                               weight_decay=sgda_weight_decay)
+                               lr=learning_rate,
+                           )
     
     # Add teacher model to the module list
     module_list.append(model_t)
@@ -63,26 +62,25 @@ def scrub(model, loaders, args):
 
     # Define validate args
     v_opt = SimpleNamespace()
-    v_opt.print_freq = args.v_opt_print_freq
+    v_opt.print_freq = 0
 
     # Define train distill args
     t_opt = SimpleNamespace()
-    t_opt.distill = args.t_opt_distill
-    t_opt.alpha = args.t_opt_alpha
-    t_opt.beta = args.t_opt_beta
-    t_opt.gamma = args.t_opt_gamma
-    t_opt.print_freq = args.t_opt_print_freq
+    t_opt.distill = 'kd'
+    t_opt.gamma = args.t_opt_gamma      # Classification weight
+    t_opt.alpha = args.t_opt_alpha      # KL divergence weight
+    t_opt.beta = 0
+    t_opt.print_freq = 0
 
     # Training loop
-    print("PERFROMING SCRUB UNLEARNING...")
-    for epoch in range(1, sgda_epochs + 1):
+    for epoch in range(1, epochs + 1):
         #lr = sgda_adjust_learning_rate(epoch, args_f, optimizer)
 
         # Train model
         maximize_loss = 0
         if epoch <= msteps:
-            maximize_loss = train_distill(epoch, train_forget_loader, module_list, None, criterion_list, optimizer, t_opt, "maximize")
-        train_acc, train_loss = train_distill(epoch, train_retain_loader, module_list, None, criterion_list, optimizer, t_opt, "minimize")
+            maximize_loss = train_distill(epoch, train_forget_loader, module_list, None, criterion_list, optimizer, t_opt, "maximize", quiet=True)
+        train_acc, train_loss = train_distill(epoch, train_retain_loader, module_list, None, criterion_list, optimizer, t_opt, "minimize", quiet=True)
 
         losses.append(train_loss)
         epoch_list.append(epoch)
@@ -96,12 +94,14 @@ def scrub(model, loaders, args):
         vr_accs.append(acc_dict['vr_acc'])
         vf_accs.append(acc_dict['vf_acc'])
 
-        # Print checkpoint progress
         print(f"Epoch {epoch}: maximize loss: {maximize_loss:.2f}, minimize loss: {train_loss:.2f}, train_acc: {train_acc}")
-        print(f"tr_acc: {acc_dict['tr_acc']}")
-        print(f"tf_acc: {acc_dict['tf_acc']}")
-        print(f"vr_acc: {acc_dict['vr_acc']}")
-        print(f"vf_acc: {acc_dict['vf_acc']}")
+
+        # Print epoch progress
+        if args.print_accuracies:
+            print(f"   tr_acc: {acc_dict['tr_acc']}")
+            print(f"   tf_acc: {acc_dict['tf_acc']}")
+            print(f"   vr_acc: {acc_dict['vr_acc']}")
+            print(f"   vf_acc: {acc_dict['vf_acc']}")
 
     # Save a copy of the student model to use in evaluation
     save_path = "/content/Unlearning-MIA-Eval/Final_Structure/checkpoints/scrub_applied.pt"
