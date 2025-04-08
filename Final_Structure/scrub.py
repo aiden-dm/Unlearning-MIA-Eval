@@ -86,7 +86,7 @@ def scrub(model, loaders, args):
 
         losses.append(train_loss)
         epoch_list.append(epoch)
-        acc_dict = train_validation(model, 
+        acc_dict = train_validation(model_s, 
                                     train_retain_loader, 
                                     train_forget_loader, 
                                     valid_retain_loader, 
