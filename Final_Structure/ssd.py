@@ -17,6 +17,16 @@ def ssd(model, loaders, args):
     # Unpacking the data loaders
     train_forget_loader = loaders[3]
     train_retain_loader = loaders[4]
+    valid_forget_loader = loaders[5]
+    valid_retain_loader = loaders[6]
+
+    # Create ssd_loaders list for training validation
+    ssd_loaders = [
+        train_retain_loader,
+        train_forget_loader,
+        valid_retain_loader,
+        valid_forget_loader
+    ]
 
     model = load_model("/content/Unlearning-MIA-Eval/Final_Structure/checkpoints/resnet_full.pt")
     unlearning_teacher = load_model("/content/Unlearning-MIA-Eval/Final_Structure/checkpoints/resnet_retain.pt")
@@ -27,11 +37,12 @@ def ssd(model, loaders, args):
     batch_size = args.batch_size
     KL_temperature = args.KL_temperature
 
-    unl_model = blindspot_unlearner(model=model, 
+    unl_model, history = blindspot_unlearner(model=model, 
                                     unlearning_teacher=unlearning_teacher, 
                                     full_trained_teacher=full_trained_teacher, 
                                     retain_data=train_retain_loader.dataset, 
                                     forget_data=train_forget_loader.dataset,
+                                    loaders=ssd_loaders,
                                     epochs=epochs,
                                     lr=lr,
                                     batch_size=batch_size,
@@ -41,4 +52,4 @@ def ssd(model, loaders, args):
     save_path = "/content/Unlearning-MIA-Eval/Final_Structure/checkpoints/ssd_applied.pt"
     torch.save(unl_model.state_dict(), save_path)
 
-    return unl_model
+    return unl_model, history
