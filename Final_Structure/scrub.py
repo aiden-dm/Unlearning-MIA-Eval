@@ -98,10 +98,10 @@ def scrub(model, loaders, args):
 
         # Print checkpoint progress
         print(f"Epoch {epoch}: maximize loss: {maximize_loss:.2f}, minimize loss: {train_loss:.2f}, train_acc: {train_acc}")
-        print(f'tr_acc: {acc_dict['tr_acc']}')
-        print(f'tf_acc: {acc_dict['tf_acc']}')
-        print(f'vr_acc: {acc_dict['vr_acc']}')
-        print(f'vf_acc: {acc_dict['vf_acc']}')
+        print(f"tr_acc: {acc_dict['tr_acc']}")
+        print(f"tf_acc: {acc_dict['tf_acc']}")
+        print(f"vr_acc: {acc_dict['vr_acc']}")
+        print(f"vf_acc: {acc_dict['vf_acc']}")
 
     # Save a copy of the student model to use in evaluation
     save_path = "/content/Unlearning-MIA-Eval/Final_Structure/checkpoints/scrub_applied.pt"
