@@ -6,10 +6,13 @@ import torch
 # Adding necessary paths to the system path
 sys.path.append('/content/Unlearning-MIA-Eval')
 
+# Imports from local code
+from Final_Structure.training import load_model, get_resnet_model
+
 # Imports from the BadTeach GitHub repository
 from Third_Party_Code.BadTeach.unlearn import blindspot_unlearner
 
-def badt(model, loaders, args):
+def badt(full_model_path, loaders, args):
     # Unpacking the data loaders
     train_forget_loader = loaders[3]
     train_retain_loader = loaders[4]
@@ -24,9 +27,9 @@ def badt(model, loaders, args):
         valid_forget_loader
     ]
 
-    unlearning_teacher = copy.deepcopy(model)
-    student_model = copy.deepcopy(model)
-    model = model.eval()
+    model = load_model(checkpoint_path=full_model_path)
+    unlearning_teacher = get_resnet_model()
+    student_model = load_model(checkpoint_path=full_model_path)
     
     KL_temperature = args.KL_temperature
     optimizer = torch.optim.Adam(student_model.parameters(), lr = args.learning_rate)
