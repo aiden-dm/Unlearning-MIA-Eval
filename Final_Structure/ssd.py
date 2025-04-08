@@ -36,6 +36,8 @@ def ssd(model, loaders, args):
     lr = args.learning_rate
     batch_size = args.batch_size
     KL_temperature = args.KL_temperature
+    step_size = args.step_size
+    gamma = args.gamma
 
     unl_model, history = blindspot_unlearner(model=model, 
                                     unlearning_teacher=unlearning_teacher, 
@@ -46,7 +48,9 @@ def ssd(model, loaders, args):
                                     epochs=epochs,
                                     lr=lr,
                                     batch_size=batch_size,
-                                    KL_temperature=KL_temperature)
+                                    KL_temperature=KL_temperature,
+                                    step_size=step_size,
+                                    gamma=gamma)
     
     # Save a copy of the student model as a checkpoint
     save_path = "/content/Unlearning-MIA-Eval/Final_Structure/checkpoints/ssd_applied.pt"
