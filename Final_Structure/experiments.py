@@ -62,7 +62,7 @@ for cls in classes:
                     criterion=nn.CrossEntropyLoss(), 
                     optimizer=optim.Adam(unl_model.parameters(), lr=0.0001), 
                     epochs=25, 
-                    save_path=full_model_path)
+                    save_path=unl_args.check_path)
             else:
                 print(f'Retrain Unlearning Unnecessary, Checkpoint Exists for Class {cls}')
                 unl_model = load_model(unl_args.check_path)
