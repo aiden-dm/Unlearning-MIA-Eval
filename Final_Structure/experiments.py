@@ -2,13 +2,15 @@
 import sys
 import os
 from types import SimpleNamespace
+import torch.optim as optim
+import torch.nn as nn
 
 # Adding necessary paths to the system path
 sys.path.append('/content/Unlearning-MIA-Eval')
 
 # Local imports
 from Final_Structure.datasets import get_loaders
-from Final_Structure.training import train_resnet, load_model
+from Final_Structure.training import get_resnet_model, train, load_model
 from Final_Structure.scrub import scrub
 from Final_Structure.badt import badt
 from Final_Structure.ssd import ssd
@@ -18,6 +20,22 @@ from Final_Structure.evaluate import evaluate_model, membership_inference_attack
 unlearn_methods = ['retrain', 'SCRUB', 'BadTeach', 'SSD']
 classes = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
+# Train the full version of the ResNet18 model
+root_path = '/content/Unlearning-MIA-Eval/Final_Structure/data'
+forget_classes = []
+loaders = get_loaders(root=root_path, forget_classes=forget_classes)
+model = get_resnet_model()
+full_model_path = f'/content/drive/MyDrive/AIML_Final_Project/checkpoints/resnet_full.pt'
+if not os.path.isfile(full_model_path):
+    train(model=get_resnet_model(), 
+        train_loader=loaders[0], 
+        criterion=nn.CrossEntropyLoss(), 
+        optimizer=optim.Adam(model.parameters(), lr=0.0001), 
+        epochs=25, 
+        save_path=full_model_path)
+else:
+    print("No need to train ResNet on full train set, as a checkpoint already exists!")
+
 # Start experiment loop
 for cls in classes:
     # Getting all the loaders
@@ -25,27 +43,7 @@ for cls in classes:
     forget_classes = [cls]
     loaders = get_loaders(root=root_path, forget_classes=forget_classes)
 
-    # Defining ResNet18 hyperparameters
-    args = SimpleNamespace()
-    args.learning_rate = 0.0001
-    args.epochs = 25
-    args.full_path = f"/content/drive/MyDrive/AIML_Final_Project/checkpoints/resnet_full_cls_{cls}.pt"
-    args.retain_path = f"/content/drive/MyDrive/AIML_Final_Project/checkpoints/resnet_retain_cls_{cls}.pt"
-
-    # Train the full and retain versions of the ResNet18 Model
-    train_bool = not os.path.isfile(args.full_path) and not os.path.isfile(args.retain_path)
-    if train_bool:
-        print("Training Full and Retain Versions of ResNet18...")
-        train_resnet(root='/content/Unlearning-MIA-Eval/Final_Structure/data',
-                     dataset='cifar10',
-                     forget_classes=[cls],
-                     batch_size=32,
-                     args=args)
-    else:
-        print("Training ResNet18 not necessary, can be loaded from checkpoints!")
-    
     # Perform unlearning methods
-    full_model_path = f'/content/drive/MyDrive/AIML_Final_Project/checkpoints/resnet_full_cls_{cls}.pt'
     metrics_data = []
     mia_data = []
     for method in unlearn_methods:
@@ -53,7 +51,23 @@ for cls in classes:
         unl_model = None
         unl_args = SimpleNamespace()
         
-        if method == 'SCRUB':
+        if method == 'retrain':
+
+            unl_model = get_resnet_model()
+            unl_args.check_path = f'/content/drive/MyDrive/AIML_Final_Project/checkpoints/retrain_cls_{cls}.pt' 
+
+            if not os.path.isfile(unl_args.check_path):
+                train(model=unl_model, 
+                    train_loader=loaders[4], 
+                    criterion=nn.CrossEntropyLoss(), 
+                    optimizer=optim.Adam(unl_model.parameters(), lr=0.0001), 
+                    epochs=25, 
+                    save_path=full_model_path)
+            else:
+                print(f'Retrain Unlearning Unnecessary, Checkpoint Exists for Class {cls}')
+                unl_model = load_model(unl_args.check_path)
+                
+        elif method == 'SCRUB':
             
             unl_args.epochs = 10
             unl_args.learning_rate = 0.0001
@@ -86,7 +100,7 @@ for cls in classes:
             else:
                 print(f'BadTeach Unlearning Unnecessary, Checkpoint Exists for Class {cls}')
                 unl_model = load_model(unl_args.check_path)
-        
+
         else:
             
             unl_args.learning_rate = 0.0001      # Doesn't impact unlearning
