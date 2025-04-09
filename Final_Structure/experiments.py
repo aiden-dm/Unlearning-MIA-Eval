@@ -27,7 +27,7 @@ loaders = get_loaders(root=root_path, forget_classes=forget_classes)
 model = get_resnet_model()
 full_model_path = f'/content/drive/MyDrive/AIML_Final_Project/checkpoints/resnet_full.pt'
 if not os.path.isfile(full_model_path):
-    train(model=get_resnet_model(), 
+    train(model=model, 
         train_loader=loaders[0], 
         criterion=nn.CrossEntropyLoss(), 
         optimizer=optim.Adam(model.parameters(), lr=0.0001), 
