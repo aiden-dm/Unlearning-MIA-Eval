@@ -37,7 +37,7 @@ def badt(full_model_path, loaders, args):
     num_workers = 8
     device = "cuda"
 
-    blindspot_unlearner(model = student_model, 
+    history = blindspot_unlearner(model = student_model, 
                         unlearning_teacher = unlearning_teacher, 
                         full_trained_teacher = model, 
                         retain_data = train_retain_loader.dataset, 
@@ -55,4 +55,4 @@ def badt(full_model_path, loaders, args):
     save_path = "/content/Unlearning-MIA-Eval/Final_Structure/checkpoints/badt_applied.pt"
     torch.save(student_model.state_dict(), save_path)
 
-    return student_model
+    return student_model, history
