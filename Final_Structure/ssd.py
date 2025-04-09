@@ -14,6 +14,7 @@ import Third_Party_Code.SSD.src.ssd as ssd_file
 
 def ssd(full_model_path, loaders, args):
     # Unpacking the data loaders
+    train_loader = loaders[0]
     train_forget_loader = loaders[3]
     train_retain_loader = loaders[4]
     valid_forget_loader = loaders[5]
@@ -44,7 +45,7 @@ def ssd(full_model_path, loaders, args):
     sample_importances = pdr.calc_importance(train_forget_loader)
 
     # Calculate the importances of D (see paper); this can also be done at any point before forgetting.
-    original_importances = pdr.calc_importance(train_forget_loader)
+    original_importances = pdr.calc_importance(train_loader)
 
     # Dampen selected parameters
     pdr.modify_weight(original_importances, sample_importances)
