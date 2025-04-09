@@ -22,7 +22,7 @@ classes = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
 # Train the full version of the ResNet18 model
 root_path = '/content/Unlearning-MIA-Eval/Final_Structure/data'
-forget_classes = []
+forget_classes = [0]  # Number in here is irrelevant
 loaders = get_loaders(root=root_path, forget_classes=forget_classes)
 model = get_resnet_model()
 full_model_path = f'/content/drive/MyDrive/AIML_Final_Project/checkpoints/resnet_full.pt'
