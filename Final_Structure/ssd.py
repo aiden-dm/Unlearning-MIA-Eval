@@ -1,55 +1,64 @@
 # Imports
 import sys
-import copy
 import torch
 
 # Adding necessary paths to the system path
 sys.path.append('/content/Unlearning-MIA-Eval')
 
-# Import from our local files
+# Importing from local code
+from Final_Structure.evaluate import train_validation
 from Final_Structure.training import load_model
 
-# Imports from the BadTeach GitHub repository
-from Third_Party_Code.SSD.src.unlearn import blindspot_unlearner
+# Import from the SSD GitHub repository
+import Third_Party_Code.SSD.src.ssd as ssd_file
 
-def ssd(model, loaders, args):
+def ssd(full_model_path, loaders, args):
     # Unpacking the data loaders
     train_forget_loader = loaders[3]
     train_retain_loader = loaders[4]
     valid_forget_loader = loaders[5]
     valid_retain_loader = loaders[6]
 
-    # Create ssd_loaders list for training validation
-    ssd_loaders = [
-        train_retain_loader,
-        train_forget_loader,
-        valid_retain_loader,
-        valid_forget_loader
-    ]
+    parameters = {
+        "lower_bound": 1,  # unused
+        "exponent": 1,  # unused
+        "magnitude_diff": None,  # unused
+        "min_layer": -1,  # -1: all layers are available for modification
+        "max_layer": -1,  # -1: all layers are available for modification
+        "forget_threshold": 1,  # unused
+        "dampening_constant": args.dampening_constant,  # Lambda from paper
+        "selection_weighting": args.selection_weighting,  # Alpha from paper
+    }
 
-    unlearning_teacher = copy.deepcopy(model)
-    full_trained_teacher = copy.deepcopy(model)
+    # Loading the fully trained ResNet model
+    model = load_model(checkpoint_path=full_model_path)
+
+    # load the trained model
+    optimizer = torch.optim.SGD(model.parameters(), lr=args.learning_rate)
+
+    pdr = ssd_file.ParameterPerturber(model, optimizer, 'cuda', parameters)
+
     model = model.eval()
 
-    epochs = args.epochs
-    lr = args.learning_rate
-    batch_size = args.batch_size
-    KL_temperature = args.KL_temperature
+    # Calculation of the forget set importances
+    sample_importances = pdr.calc_importance(train_forget_loader)
 
-    unl_model, history = blindspot_unlearner(model=model, 
-                                    unlearning_teacher=unlearning_teacher, 
-                                    full_trained_teacher=full_trained_teacher, 
-                                    retain_data=train_retain_loader.dataset, 
-                                    forget_data=train_forget_loader.dataset,
-                                    loaders=ssd_loaders,
-                                    epochs=epochs,
-                                    lr=lr,
-                                    batch_size=batch_size,
-                                    KL_temperature=KL_temperature,
-                                    print_accuracies = args.print_accuracies)
+    # Calculate the importances of D (see paper); this can also be done at any point before forgetting.
+    original_importances = pdr.calc_importance(train_forget_loader)
+
+    # Dampen selected parameters
+    pdr.modify_weight(original_importances, sample_importances)
+
+    # Validate results
+    acc_dict = train_validation(model, 
+                                train_retain_loader, 
+                                train_forget_loader, 
+                                valid_retain_loader, 
+                                valid_forget_loader)
     
-    # Save a copy of the student model as a checkpoint
-    save_path = "/content/Unlearning-MIA-Eval/Final_Structure/checkpoints/ssd_applied.pt"
-    torch.save(unl_model.state_dict(), save_path)
+    return model, acc_dict
 
-    return unl_model, history
+
+
+
+    
