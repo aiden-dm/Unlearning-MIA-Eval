@@ -52,7 +52,6 @@ def badt(full_model_path, loaders, args):
                         print_accuracies = args.print_accuracies)
 
     # Save a copy of the student model as a checkpoint
-    save_path = "/content/Unlearning-MIA-Eval/Final_Structure/checkpoints/badt_applied.pt"
-    torch.save(student_model.state_dict(), save_path)
+    torch.save(student_model.state_dict(), args.check_path)
 
     return student_model, history

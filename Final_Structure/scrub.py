@@ -11,12 +11,16 @@ import torch
 sys.path.append('/content/Unlearning-MIA-Eval')
 
 from Final_Structure.evaluate import train_validation
+from Final_Structure.training import load_model
 
 # Imports from the SCRUB repository
 from Third_Party_Code.SCRUB.thirdparty.repdistiller.distiller_zoo import DistillKL
 from Third_Party_Code.SCRUB.thirdparty.repdistiller.helper.loops import train_distill, validate
 
-def scrub(model, loaders, args):
+def scrub(full_model_path, loaders, args):
+
+    # Load full model 
+    model = load_model(full_model_path)
 
     # Extracting the loaders that we want
     train_forget_loader = loaders[3]
@@ -104,8 +108,7 @@ def scrub(model, loaders, args):
             print(f"   vf_acc: {acc_dict['vf_acc']}")
 
     # Save a copy of the student model to use in evaluation
-    save_path = "/content/Unlearning-MIA-Eval/Final_Structure/checkpoints/scrub_applied.pt"
-    torch.save(model_s.state_dict(), save_path)
+    torch.save(model_s.state_dict(), args.check_path)
 
     history = {
         'losses': losses,

@@ -57,6 +57,9 @@ def ssd(full_model_path, loaders, args):
                                 valid_retain_loader, 
                                 valid_forget_loader)
     
+    # Save model checkpoint
+    torch.save(model.state_dict(), args.check_path)
+    
     return model, acc_dict
 
 
