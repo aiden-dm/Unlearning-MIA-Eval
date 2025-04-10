@@ -40,6 +40,8 @@ else:
     print("No need to train ResNet on full train set, as a checkpoint already exists!")
 
 # Start experiment loop
+all_metrics_data = []
+all_mia_data = []
 for cls in classes:
     # Getting all the loaders
     root_path = '/content/Unlearning-MIA-Eval/Final_Structure/data'
@@ -134,6 +136,10 @@ for cls in classes:
         metrics_data.append((retain_metrics, forget_metrics))
         mia_data.append((mia_mean_metrics, mia_std_metrics))
 
+    # Save the data for this class for use later
+    all_metrics_data.append(metrics_data)
+    all_mia_data.append(mia_data)
+
 # Define headers for results tables
 performance_cols = ['Forgotten Class', 'Method', 'Accuracy', 'Precision', 'Recall', 'F1 Score']
 
@@ -142,34 +148,36 @@ f_performance_df = pd.DataFrame(columns=performance_cols)
 r_performance_df = pd.DataFrame(columns=performance_cols)
 
 # Create performance metrics tables
-for i, (retain_metrics, forget_metrics) in enumerate(metrics_data):
-    class_name = class_names[i]
-    method = unlearn_methods[i % len(unlearn_methods)]
+for i in range(len(classes)): 
+    curr_metrics_data = all_metrics_data[i]
+    for j, (retain_metrics, forget_metrics) in enumerate(curr_metrics_data): 
+    
+        class_name = class_names[i]
+        method = unlearn_methods[j]
 
-    r_row = {
-        'Forgotten Class': class_name,
-        'Method': method,
-        'Accuracy': retain_metrics['accuracy'],
-        'Precision': retain_metrics['precision'],
-        'Recall': retain_metrics['recall'],
-        'F1 Score': retain_metrics['f1']
-    }
+        r_row = {
+            'Forgotten Class': class_name,
+            'Method': method,
+            'Accuracy': retain_metrics['accuracy'],
+            'Precision': retain_metrics['precision'],
+            'Recall': retain_metrics['recall'],
+            'F1 Score': retain_metrics['f1']
+        }
 
-    f_row = {
-        'Forgotten Class': class_name,
-        'Method': method,
-        'Accuracy': forget_metrics['accuracy'],
-        'Precision': forget_metrics['precision'],
-        'Recall': forget_metrics['recall'],
-        'F1 Score': forget_metrics['f1']
-    }
+        f_row = {
+            'Forgotten Class': class_name,
+            'Method': method,
+            'Accuracy': forget_metrics['accuracy'],
+            'Precision': forget_metrics['precision'],
+            'Recall': forget_metrics['recall'],
+            'F1 Score': forget_metrics['f1']
+        }
 
-    # Append rows
-    r_performance_df = pd.concat([r_performance_df, pd.DataFrame([r_row])], ignore_index=True)
-    f_performance_df = pd.concat([f_performance_df, pd.DataFrame([f_row])], ignore_index=True)
+        # Append rows
+        r_performance_df = pd.concat([r_performance_df, pd.DataFrame([r_row])], ignore_index=True)
+        f_performance_df = pd.concat([f_performance_df, pd.DataFrame([f_row])], ignore_index=True)
 
 # Print nicely
-from tabulate import tabulate
 print(tabulate(r_performance_df, headers='keys', tablefmt='pretty'))
 print()
 print(tabulate(f_performance_df, headers='keys', tablefmt='pretty'))
