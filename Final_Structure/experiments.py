@@ -134,41 +134,41 @@ for cls in classes:
         metrics_data.append((retain_metrics, forget_metrics))
         mia_data.append((mia_mean_metrics, mia_std_metrics))
 
-    # Define headers for results tables
-    performance_cols = ['Forgotten Class', 'Method', 'Accuracy', 'Precision', 'Recall', 'F1 Score']
+# Define headers for results tables
+performance_cols = ['Forgotten Class', 'Method', 'Accuracy', 'Precision', 'Recall', 'F1 Score']
 
-    # Initialize results tables
-    f_performance_df = pd.DataFrame([performance_cols])
-    r_performance_df = pd.DataFrame([performance_cols])
-    mia_df = pd.DataFrame()
+# Initialize results tables
+f_performance_df = pd.DataFrame([performance_cols])
+r_performance_df = pd.DataFrame([performance_cols])
+mia_df = pd.DataFrame()
 
-    # Create performance metrics tables
-    for i, (retain_metrics, forget_metrics) in enumerate(metrics_data):
-        # Create retain row
-        r_row = {
-            'Forgotten Class': class_names[i],
-            'Method': unlearn_methods[i % 4],
-            'Accuracy': retain_metrics['accuracy'],
-            'Precision': retain_metrics['precision'],
-            'Recall': retain_metrics['recall'],
-            'F1 Score': retain_metrics['f1']
-        }
+# Create performance metrics tables
+for i, (retain_metrics, forget_metrics) in enumerate(metrics_data):
+    # Create retain row
+    r_row = {
+        'Forgotten Class': class_names[i],
+        'Method': unlearn_methods[i % 4],
+        'Accuracy': retain_metrics['accuracy'],
+        'Precision': retain_metrics['precision'],
+        'Recall': retain_metrics['recall'],
+        'F1 Score': retain_metrics['f1']
+    }
 
-        # Create forget row
-        f_row = {
-            'Forgotten Class': class_names[i],
-            'Method': unlearn_methods[i % 4],
-            'Accuracy': forget_metrics['accuracy'],
-            'Precision': forget_metrics['precision'],
-            'Recall': forget_metrics['recall'],
-            'F1 Score': forget_metrics['f1']
-        }
+    # Create forget row
+    f_row = {
+        'Forgotten Class': class_names[i],
+        'Method': unlearn_methods[i % 4],
+        'Accuracy': forget_metrics['accuracy'],
+        'Precision': forget_metrics['precision'],
+        'Recall': forget_metrics['recall'],
+        'F1 Score': forget_metrics['f1']
+    }
 
-        # Adding these rows to the tables
-        r_performance_df = pd.concat([r_performance_df, pd.DataFrame([r_row])], ignore_index=True)
-        f_performance_df = pd.concat([f_performance_df, pd.DataFrame([f_row])], ignore_index=True)
+    # Adding these rows to the tables
+    r_performance_df = pd.concat([r_performance_df, pd.DataFrame([r_row])], ignore_index=True)
+    f_performance_df = pd.concat([f_performance_df, pd.DataFrame([f_row])], ignore_index=True)
 
-    # Print the dataframes for viewing
-    print(tabulate(r_performance_df, headers='keys', tablefmt='pretty'))
-    print()
-    print(tabulate(f_performance_df, headers='keys', tablefmt='pretty'))
+# Print the dataframes for viewing
+print(tabulate(r_performance_df, headers='keys', tablefmt='pretty'))
+print()
+print(tabulate(f_performance_df, headers='keys', tablefmt='pretty'))
