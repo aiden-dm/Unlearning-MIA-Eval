@@ -181,9 +181,38 @@ for i in range(len(classes)):
 print(tabulate(r_performance_df, headers='keys', tablefmt='pretty'))
 print()
 print(tabulate(f_performance_df, headers='keys', tablefmt='pretty'))
+print()
 
 # Create the membership inference attack table
-mia_cols = []
+mia_cols = ['Forgotten Class', 'Method', 'ACC', 
+            'TP', 'TN', 'FP', 'FN', 
+            'TPR', 'TNR', 'PPV', 'NPV',
+            'FPR', 'FNR', 'FDR']
+mia_df = pd.DataFrame(columns=mia_cols)
 
-print()
-print(all_mia_data)
+rows = []
+for i in range(len(classes)):
+    curr_mia_data = all_mia_data[i]
+    for j, (avg_df, std_df) in enumerate(curr_mia_data):
+        class_name = class_names[i]
+        method = unlearn_methods[j]
+        row = {
+            'Forgotten Class': class_name, 
+            'Method': method, 
+            'ACC': f'{avg_df.iloc[11, 1]}±{std_df.iloc[11, 1]}', 
+            'TP': f'{avg_df.iloc[0, 1]}±{std_df.iloc[0, 1]}',
+            'TN': f'{avg_df.iloc[1, 1]}±{std_df.iloc[1, 1]}', 
+            'FP': f'{avg_df.iloc[2, 1]}±{std_df.iloc[2, 1]}', 
+            'FN': f'{avg_df.iloc[3, 1]}±{std_df.iloc[3, 1]}', 
+            'TPR': f'{avg_df.iloc[4, 1]}±{std_df.iloc[4, 1]}', 
+            'TNR': f'{avg_df.iloc[5, 1]}±{std_df.iloc[5, 1]}', 
+            'PPV': f'{avg_df.iloc[6, 1]}±{std_df.iloc[6, 1]}', 
+            'NPV': f'{avg_df.iloc[7, 1]}±{std_df.iloc[7, 1]}',
+            'FPR': f'{avg_df.iloc[8, 1]}±{std_df.iloc[8, 1]}', 
+            'FNR': f'{avg_df.iloc[9, 1]}±{std_df.iloc[9, 1]}', 
+            'FDR': f'{avg_df.iloc[10, 1]}±{std_df.iloc[10, 1]}'
+        }
+        rows.append(row)
+
+mia_df = pd.DataFrame(rows, columns=mia_cols)
+print(tabulate(mia_df, headers='keys', tablefmt='pretty'))
