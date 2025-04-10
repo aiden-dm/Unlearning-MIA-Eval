@@ -154,23 +154,24 @@ for i in range(len(classes)):
     
         class_name = class_names[i]
         method = unlearn_methods[j]
+        round_to_2 = lambda x: round(x, 2)
 
         r_row = {
             'Forgotten Class': class_name,
             'Method': method,
-            'Accuracy': retain_metrics['accuracy'],
-            'Precision': retain_metrics['precision'],
-            'Recall': retain_metrics['recall'],
-            'F1 Score': retain_metrics['f1']
+            'Accuracy': round_to_2(retain_metrics['accuracy']),
+            'Precision': round_to_2(retain_metrics['precision']),
+            'Recall': round_to_2(retain_metrics['recall']),
+            'F1 Score': round_to_2(retain_metrics['f1'])
         }
 
         f_row = {
             'Forgotten Class': class_name,
             'Method': method,
-            'Accuracy': forget_metrics['accuracy'],
-            'Precision': forget_metrics['precision'],
-            'Recall': forget_metrics['recall'],
-            'F1 Score': forget_metrics['f1']
+            'Accuracy': round_to_2(forget_metrics['accuracy']),
+            'Precision': round_to_2(forget_metrics['precision']),
+            'Recall': round_to_2(forget_metrics['recall']),
+            'F1 Score': round_to_2(forget_metrics['f1'])
         }
 
         # Append rows
@@ -199,20 +200,25 @@ for i in range(len(classes)):
         row = {
             'Forgotten Class': class_name, 
             'Method': method, 
-            'ACC': f'{mean_metrics["ACC"]}±{std_metrics["ACC"]}', 
-            'TP': f'{mean_metrics["TP"]}±{std_metrics["TP"]}',
-            'TN': f'{mean_metrics["TN"]}±{std_metrics["TN"]}', 
-            'FP': f'{mean_metrics["FP"]}±{std_metrics["FP"]}', 
-            'FN': f'{mean_metrics["FN"]}±{std_metrics["FN"]}', 
-            'TPR': f'{mean_metrics["TPR"]}±{std_metrics["TPR"]}', 
-            'TNR': f'{mean_metrics["TNR"]}±{std_metrics["TNR"]}', 
-            'PPV': f'{mean_metrics["PPV"]}±{std_metrics["PPV"]}', 
-            'NPV': f'{mean_metrics["NPV"]}±{std_metrics["NPV"]}',
-            'FPR': f'{mean_metrics["FPR"]}±{std_metrics["FPR"]}', 
-            'FNR': f'{mean_metrics["FNR"]}±{std_metrics["FNR"]}', 
-            'FDR': f'{mean_metrics["FDR"]}±{std_metrics["FDR"]}'
+            'ACC': f'{mean_metrics["ACC"]:.2f}±{std_metrics["ACC"]:.2f}', 
+            'TP': f'{mean_metrics["TP"]:.2f}±{std_metrics["TP"]:.2f}',
+            'TN': f'{mean_metrics["TN"]:.2f}±{std_metrics["TN"]:.2f}', 
+            'FP': f'{mean_metrics["FP"]:.2f}±{std_metrics["FP"]:.2f}', 
+            'FN': f'{mean_metrics["FN"]:.2f}±{std_metrics["FN"]:.2f}', 
+            'TPR': f'{mean_metrics["TPR"]:.2f}±{std_metrics["TPR"]:.2f}', 
+            'TNR': f'{mean_metrics["TNR"]:.2f}±{std_metrics["TNR"]:.2f}', 
+            'PPV': f'{mean_metrics["PPV"]:.2f}±{std_metrics["PPV"]:.2f}', 
+            'NPV': f'{mean_metrics["NPV"]:.2f}±{std_metrics["NPV"]:.2f}',
+            'FPR': f'{mean_metrics["FPR"]:.2f}±{std_metrics["FPR"]:.2f}', 
+            'FNR': f'{mean_metrics["FNR"]:.2f}±{std_metrics["FNR"]:.2f}', 
+            'FDR': f'{mean_metrics["FDR"]:.2f}±{std_metrics["FDR"]:.2f}'
         }
         rows.append(row)
 
 mia_df = pd.DataFrame(rows, columns=mia_cols)
 print(tabulate(mia_df, headers='keys', tablefmt='pretty'))
+
+# Saving data tables locally
+r_performance_df.to_pickle('/content/drive/MyDrive/AIML_Final_Project/retain_performance.pkl')
+f_performance_df.to_pickle('/content/drive/MyDrive/AIML_Final_Project/forget_performance.pkl')
+mia_df.to_pickle('/content/drive/MyDrive/AIML_Final_Project/mia_results.pkl')
