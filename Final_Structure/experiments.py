@@ -181,3 +181,11 @@ for i in range(len(classes)):
 print(tabulate(r_performance_df, headers='keys', tablefmt='pretty'))
 print()
 print(tabulate(f_performance_df, headers='keys', tablefmt='pretty'))
+
+# Create the membership inference attack table
+mia_cols = []
+
+(mia_mean_metrics, mia_std_metrics) = all_mia_data[0][0]
+print(tabulate(mia_mean_metrics, headers='keys', tablefmt='pretty'))
+print()
+print(tabulate(mia_std_metrics, headers='keys', tablefmt='pretty'))
