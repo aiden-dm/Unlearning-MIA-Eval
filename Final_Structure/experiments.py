@@ -193,24 +193,24 @@ mia_df = pd.DataFrame(columns=mia_cols)
 rows = []
 for i in range(len(classes)):
     curr_mia_data = all_mia_data[i]
-    for j, (avg_df, std_df) in enumerate(curr_mia_data):
+    for j, (mean_metrics, std_metrics) in enumerate(curr_mia_data):
         class_name = class_names[i]
         method = unlearn_methods[j]
         row = {
             'Forgotten Class': class_name, 
             'Method': method, 
-            'ACC': f'{avg_df.iloc[11, 1]}±{std_df.iloc[11, 1]}', 
-            'TP': f'{avg_df.iloc[0, 1]}±{std_df.iloc[0, 1]}',
-            'TN': f'{avg_df.iloc[1, 1]}±{std_df.iloc[1, 1]}', 
-            'FP': f'{avg_df.iloc[2, 1]}±{std_df.iloc[2, 1]}', 
-            'FN': f'{avg_df.iloc[3, 1]}±{std_df.iloc[3, 1]}', 
-            'TPR': f'{avg_df.iloc[4, 1]}±{std_df.iloc[4, 1]}', 
-            'TNR': f'{avg_df.iloc[5, 1]}±{std_df.iloc[5, 1]}', 
-            'PPV': f'{avg_df.iloc[6, 1]}±{std_df.iloc[6, 1]}', 
-            'NPV': f'{avg_df.iloc[7, 1]}±{std_df.iloc[7, 1]}',
-            'FPR': f'{avg_df.iloc[8, 1]}±{std_df.iloc[8, 1]}', 
-            'FNR': f'{avg_df.iloc[9, 1]}±{std_df.iloc[9, 1]}', 
-            'FDR': f'{avg_df.iloc[10, 1]}±{std_df.iloc[10, 1]}'
+            'ACC': f'{mean_metrics["ACC"]}±{std_metrics["ACC"]}', 
+            'TP': f'{mean_metrics["TP"]}±{std_metrics["TP"]}',
+            'TN': f'{mean_metrics["TN"]}±{std_metrics["TN"]}', 
+            'FP': f'{mean_metrics["FP"]}±{std_metrics["FP"]}', 
+            'FN': f'{mean_metrics["FN"]}±{std_metrics["FN"]}', 
+            'TPR': f'{mean_metrics["TPR"]}±{std_metrics["TPR"]}', 
+            'TNR': f'{mean_metrics["TNR"]}±{std_metrics["TNR"]}', 
+            'PPV': f'{mean_metrics["PPV"]}±{std_metrics["PPV"]}', 
+            'NPV': f'{mean_metrics["NPV"]}±{std_metrics["NPV"]}',
+            'FPR': f'{mean_metrics["FPR"]}±{std_metrics["FPR"]}', 
+            'FNR': f'{mean_metrics["FNR"]}±{std_metrics["FNR"]}', 
+            'FDR': f'{mean_metrics["FDR"]}±{std_metrics["FDR"]}'
         }
         rows.append(row)
 
