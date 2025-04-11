@@ -124,12 +124,13 @@ for cls in classes:
         test_loader = loaders[2]
         test_retain_loader = loaders[8]
         test_forget_loader = loaders[7]
+        train_forget_loader = loaders[3]
         retain_metrics = evaluate_model(unl_model, test_retain_loader, 'cuda')
         forget_metrics = evaluate_model(unl_model, test_forget_loader, 'cuda')
         mia_mean_metrics, mia_std_metrics = membership_inference_attack(
             unl_model,
             test_loader,
-            test_forget_loader,
+            train_forget_loader,
             device='cuda',
             seed=42
         )
