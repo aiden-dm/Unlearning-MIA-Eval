@@ -22,11 +22,12 @@ from Final_Structure.evaluate import evaluate_model, membership_inference_attack
 unlearn_methods = ['retrain', 'SCRUB', 'BadTeach', 'SSD']
 classes = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 class_names = ['Airplane', 'Car', 'Bird', 'Cat', 'Deer', 'Dog', 'Frog', 'Horse', 'Ship', 'Truck']
+seed = 42
 
 # Train the full version of the ResNet18 model
 root_path = '/content/Unlearning-MIA-Eval/Final_Structure/data'
 forget_classes = [0]  # Number in here is irrelevant
-loaders = get_loaders(root=root_path, forget_classes=forget_classes)
+loaders = get_loaders(root=root_path, forget_classes=forget_classes, seed=42)
 model = get_resnet_model()
 full_model_path = f'/content/drive/MyDrive/AIML_Final_Project/checkpoints/resnet_full.pt'
 if not os.path.isfile(full_model_path):
@@ -46,7 +47,7 @@ for cls in classes:
     # Getting all the loaders
     root_path = '/content/Unlearning-MIA-Eval/Final_Structure/data'
     forget_classes = [cls]
-    loaders = get_loaders(root=root_path, forget_classes=forget_classes)
+    loaders = get_loaders(root=root_path, forget_classes=forget_classes, seed=42)
 
     # Perform unlearning methods
     metrics_data = []

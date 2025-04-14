@@ -5,6 +5,7 @@ import torchvision.transforms as transforms
 from torch.utils.data import DataLoader, Dataset
 import numpy as np
 from PIL import Image
+import random
 
 # Function that gets transformation for the CIFAR10 set
 def _get_cifar_transforms(augment=True):
@@ -73,7 +74,16 @@ def forget_retain_split(dataset, forget_classes=[]):
 
     return forget_subset, retain_subset
 
-def get_loaders(root, forget_classes):
+def set_seed(seed=42):
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+    random.seed(seed)
+
+def get_loaders(root, forget_classes, seed):
+    # Set the seed for repeatable dataloaders
+    set_seed(seed)
+    generator = torch.Generator().manual_seed(seed)
+
     # Define hyperparameters
     validation_split = 0.2
     batch_size = 32
@@ -89,14 +99,14 @@ def get_loaders(root, forget_classes):
     train_full_subset = CustomDataset(train_data, train_targets, transform=train_set.transform)
     val_full_subset = CustomDataset(val_data, val_targets, transform=train_set.transform)
     test_full_subset = CustomDataset(test_set.data, test_set.targets, transform=test_set.transform)
-    train_loader = DataLoader(train_full_subset, batch_size=batch_size, shuffle=True, num_workers=8)
+    train_loader = DataLoader(train_full_subset, batch_size=batch_size, shuffle=True, num_workers=8, generator=generator)
     valid_loader = DataLoader(val_full_subset, batch_size=batch_size, shuffle=False, num_workers=8)
     test_loader = DataLoader(test_full_subset, batch_size=batch_size, shuffle=False, num_workers=8)
 
     # Creating train forget/retain loaders
     train_forget, train_retain = forget_retain_split(train_set, forget_classes)
-    train_forget_loader = DataLoader(train_forget, batch_size=batch_size, shuffle=True, num_workers=8)
-    train_retain_loader = DataLoader(train_retain, batch_size=batch_size, shuffle=True, num_workers=8)
+    train_forget_loader = DataLoader(train_forget, batch_size=batch_size, shuffle=True, num_workers=8, generator=generator)
+    train_retain_loader = DataLoader(train_retain, batch_size=batch_size, shuffle=True, num_workers=8, generator=generator)
 
     # Creating valid forget/retain loaders 
     valid_forget, valid_retain = forget_retain_split(val_full_subset, forget_classes)
