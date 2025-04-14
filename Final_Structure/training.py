@@ -55,16 +55,15 @@ def train(model, train_loader, criterion, optimizer, epochs=10, save_path="resne
 
 
 def train_resnet(root='./data', 
-                 dataset='cifar10', 
                  forget_classes=[],
-                 batch_size = 32,
+                 seed=42,
                  args=None):
     
     # Get ResNet model
     model = get_resnet_model()
     
     # Getting the train full and retain loaders
-    loaders = get_loaders(root, forget_classes)
+    loaders = get_loaders(root=root, forget_classes=forget_classes, seed=seed)
     train_loader = loaders[0]
     train_retain_loader = loaders[4]
 
