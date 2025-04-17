@@ -126,8 +126,9 @@ for cls in classes:
         test_retain_loader = loaders[8]
         test_forget_loader = loaders[7]
         train_forget_loader = loaders[3]
-        retain_metrics = evaluate_model(unl_model, test_retain_loader, 'cuda')
-        forget_metrics = evaluate_model(unl_model, test_forget_loader, 'cuda')
+        train_retain_loader = loaders[4]
+        retain_metrics = evaluate_model(unl_model, train_retain_loader, 'cuda')
+        forget_metrics = evaluate_model(unl_model, train_forget_loader, 'cuda')
         mia_mean_metrics, mia_std_metrics = membership_inference_attack(
             unl_model,
             test_loader,
@@ -221,6 +222,6 @@ mia_df = pd.DataFrame(rows, columns=mia_cols)
 print(tabulate(mia_df, headers='keys', tablefmt='pretty'))
 
 # Saving data tables locally
-r_performance_df.to_pickle('/content/drive/MyDrive/AIML_Final_Project/retain_performance.pkl')
-f_performance_df.to_pickle('/content/drive/MyDrive/AIML_Final_Project/forget_performance.pkl')
+r_performance_df.to_pickle('/content/drive/MyDrive/AIML_Final_Project/retain_performance_train.pkl')
+f_performance_df.to_pickle('/content/drive/MyDrive/AIML_Final_Project/forget_performance_train.pkl')
 mia_df.to_pickle('/content/drive/MyDrive/AIML_Final_Project/mia_results.pkl')
