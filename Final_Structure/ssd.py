@@ -44,12 +44,8 @@ def ssd(full_model_path, loaders, args):
     # Calculation of the forget set importances
     sample_importances = pdr.calc_importance(train_forget_loader)
 
-    print(sample_importances)
-
     # Calculate the importances of D (see paper); this can also be done at any point before forgetting.
     original_importances = pdr.calc_importance(train_loader)
-
-    print(original_importances)
 
     print(train_validation(model, 
                             train_retain_loader, 
