@@ -86,7 +86,7 @@ def get_loaders(root, forget_classes, seed):
 
     # Define hyperparameters
     validation_split = 0.2
-    batch_size = 32
+    batch_size = 256
 
     # Load CIFAR-10 dataset
     train_set, test_set = cifar10(root, augment=False)
