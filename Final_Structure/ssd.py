@@ -27,15 +27,15 @@ def ssd(full_model_path, loaders, args):
         "min_layer": -1,  # -1: all layers are available for modification
         "max_layer": -1,  # -1: all layers are available for modification
         "forget_threshold": 1,  # unused
-        "dampening_constant": args.dampening_constant,  # Lambda from paper
-        "selection_weighting": args.selection_weighting,  # Alpha from paper
+        "dampening_constant": args.dampening_constant,   # Lambda from paper
+        "selection_weighting": args.selection_weighting, # Alpha from paper
     }
 
     # Loading the fully trained ResNet model
     model = load_model(checkpoint_path=full_model_path)
 
     # load the trained model
-    optimizer = torch.optim.SGD(model.parameters(), lr=args.learning_rate)
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
 
     pdr = ssd_file.ParameterPerturber(model, optimizer, 'cuda', parameters)
 
