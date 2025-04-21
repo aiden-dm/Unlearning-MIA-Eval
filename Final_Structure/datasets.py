@@ -31,6 +31,13 @@ def cifar10(root, augment=False):
     test_set  = torchvision.datasets.CIFAR10(root=root, train=False, download=True, transform=transform_test)
     return train_set, test_set
 
+# Function that defines the CIFAR100 set used in experiments
+def cifar100(root, augment=False):
+    transform_train, transform_test = _get_cifar_transforms(augment=augment)
+    train_set = torchvision.datasets.CIFAR100(root=root, train=True, download=True, transform=transform_train)
+    test_set  = torchvision.datasets.CIFAR100(root=root, train=False, download=True, transform=transform_test)
+    return train_set, test_set
+
 # Dataset class needed for compatibility with the 3rd party SCRUB repo
 class CustomDataset(Dataset):
     def __init__(self, data, targets, indices=None, transform=None, target_transform=None):
@@ -79,7 +86,7 @@ def set_seed(seed=42):
     np.random.seed(seed)
     random.seed(seed)
 
-def get_loaders(root, forget_classes, seed):
+def get_loaders(root, dataset, forget_classes, seed):
     # Set the seed for repeatable dataloaders
     set_seed(seed)
     generator = torch.Generator().manual_seed(seed)
@@ -89,7 +96,12 @@ def get_loaders(root, forget_classes, seed):
     batch_size = 256
 
     # Load CIFAR-10 dataset
-    train_set, test_set = cifar10(root, augment=False)
+    if dataset == "cifar10":
+        train_set, test_set = cifar10(root, augment=True)
+    elif dataset == "cifar100":
+        train_set, test_set = cifar100(root, augment=True)
+    else:
+        raise RuntimeError("Inputted undefined dataset name!")
 
     # Creating full train, valid and test dataloaders
     num_train = len(train_set)
