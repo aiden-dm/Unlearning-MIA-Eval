@@ -8,9 +8,6 @@ import sys
 # Adding the local files to the system path
 sys.path.append('/content/Unlearning-MIA-Eval/Final_Structure')
 
-# Our local imports
-from datasets import get_loaders
-
 # Setting device
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -53,19 +50,12 @@ def train(model, train_loader, criterion, optimizer, epochs=10, save_path="resne
     # Save checkpoint
     torch.save(model.state_dict(), save_path)
 
-
-def train_resnet(root='./data', 
-                 forget_classes=[],
-                 seed=42,
-                 args=None):
+# Function that trains ResNet18 on full train and train retain sets
+# Used primarily in hyperparameter tuning process
+def train_resnet(train_loader, train_retain_loader, args=None):
     
     # Get ResNet model
     model = get_resnet_model()
-    
-    # Getting the train full and retain loaders
-    loaders = get_loaders(root=root, forget_classes=forget_classes, seed=seed)
-    train_loader = loaders[0]
-    train_retain_loader = loaders[4]
 
     # Define some training variables
     criterion = nn.CrossEntropyLoss()
@@ -83,7 +73,7 @@ def train_resnet(root='./data',
     optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
 
     # Train on the retain set
-    print("Training the ResNet model on the dataset without classes:", forget_classes)
+    print("Training the ResNet model on the train retain dataset...")
     train(model, train_retain_loader, criterion, optimizer, epochs, retain_path)
 
     # Indicate that training is finished
