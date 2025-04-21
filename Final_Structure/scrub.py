@@ -20,7 +20,7 @@ from Third_Party_Code.SCRUB.thirdparty.repdistiller.helper.loops import train_di
 def scrub(full_model_path, loaders, args):
 
     # Load full model 
-    model = load_model(full_model_path)
+    model = load_model(dataset=args.dataset, checkpoint_path=full_model_path)
 
     # Extracting the loaders that we want
     train_forget_loader = loaders[3]

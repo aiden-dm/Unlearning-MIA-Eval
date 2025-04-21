@@ -32,7 +32,7 @@ def ssd(full_model_path, loaders, args):
     }
 
     # Loading the fully trained ResNet model
-    model = load_model(checkpoint_path=full_model_path)
+    model = load_model(dataset=args.dataset, checkpoint_path=full_model_path)
 
     # load the trained model
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)

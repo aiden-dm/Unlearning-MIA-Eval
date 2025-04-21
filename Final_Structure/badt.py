@@ -27,9 +27,9 @@ def badt(full_model_path, loaders, args):
         valid_forget_loader
     ]
 
-    model = load_model(checkpoint_path=full_model_path)
-    unlearning_teacher = get_resnet_model()
-    student_model = load_model(checkpoint_path=full_model_path)
+    model = load_model(dataset=args.dataset, checkpoint_path=full_model_path)
+    unlearning_teacher = get_resnet_model(dataset=args.dataset)
+    student_model = load_model(dataset=args.dataset, checkpoint_path=full_model_path)
     
     KL_temperature = args.KL_temperature
     optimizer = torch.optim.Adam(student_model.parameters(), lr = args.learning_rate)

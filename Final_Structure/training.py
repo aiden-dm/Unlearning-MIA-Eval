@@ -11,10 +11,18 @@ sys.path.append('/content/Unlearning-MIA-Eval/Final_Structure')
 # Setting device
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# Load a pre-trained ResNet model and modify for CIFAR-10 (10 classes)
-def get_resnet_model():
+# Load a pre-trained ResNet model
+def get_resnet_model(dataset):
+    
+    # Get the output layer size depending on dataset
+    out_layer_size = 0
+    if dataset == "cifar10":
+        out_layer_size = 10
+    elif dataset == "cifar100":
+        out_layer_size = 100
+
     model = models.resnet18(weights=None)           # No pre-trained weights
-    model.fc = nn.Linear(model.fc.in_features, 10)  # Adjust output layer for 10 classes
+    model.fc = nn.Linear(model.fc.in_features, out_layer_size)  # Adjust output layer for 10 classes
     return model.to(DEVICE)
 
 def train(model, train_loader, criterion, optimizer, epochs=10, save_path="resnet_cifar.pth"):
@@ -52,10 +60,10 @@ def train(model, train_loader, criterion, optimizer, epochs=10, save_path="resne
 
 # Function that trains ResNet18 on full train and train retain sets
 # Used primarily in hyperparameter tuning process
-def train_resnet(train_loader, train_retain_loader, args=None):
+def train_resnet(train_loader, train_retain_loader, dataset, args=None):
     
     # Get ResNet model
-    model = get_resnet_model()
+    model = get_resnet_model(dataset)
 
     # Define some training variables
     criterion = nn.CrossEntropyLoss()
@@ -69,7 +77,7 @@ def train_resnet(train_loader, train_retain_loader, args=None):
     train(model, train_loader, criterion, optimizer, epochs, full_path)
 
     # Reset model weights and optimizer
-    model = get_resnet_model()
+    model = get_resnet_model(dataset)
     optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
 
     # Train on the retain set
@@ -79,7 +87,7 @@ def train_resnet(train_loader, train_retain_loader, args=None):
     # Indicate that training is finished
     print('Training Complete!')
 
-def load_model(checkpoint_path="resnet_cifar.pt"):
-    model = get_resnet_model()
+def load_model(dataset, checkpoint_path="resnet_cifar.pt"):
+    model = get_resnet_model(dataset)
     model.load_state_dict(torch.load(checkpoint_path, map_location=DEVICE))
     return model
