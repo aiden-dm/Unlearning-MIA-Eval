@@ -1,8 +1,8 @@
 # Imports
 import torch
 import torch.nn as nn
-import torch.optim as optim
 import torchvision.models as models
+from torch.amp import autocast
 import sys
 
 # Adding the local files to the system path
@@ -21,11 +21,14 @@ def get_resnet_model(dataset):
     elif dataset == "cifar100":
         out_layer_size = 100
 
-    model = models.resnet18(weights=None)           # No pre-trained weights
-    model.fc = nn.Linear(model.fc.in_features, out_layer_size)  # Adjust output layer for 10 classes
+    model = models.resnet18(weights=None)
+    model.fc = nn.Linear(model.fc.in_features, out_layer_size)
     return model.to(DEVICE)
 
-def train(model, train_loader, criterion, optimizer, epochs=10, save_path="resnet_cifar.pth"):
+def train(model, train_loader, criterion, optimizer, epochs=10, scheduler=None, save_path="resnet_cifar.pth"):
+    # Make sure model is on the GPU
+    model.to(DEVICE)
+    
     # Putting model in training mode
     model.train()
 
@@ -39,53 +42,27 @@ def train(model, train_loader, criterion, optimizer, epochs=10, save_path="resne
         
         for images, labels in train_loader:
             images, labels = images.to(DEVICE), labels.to(DEVICE)
-            
-            # Updating gradients, loss and optimizer
             optimizer.zero_grad()
-            outputs = model(images)
-            loss = criterion(outputs, labels)
+            
+            with autocast(device_type='cuda'):
+                outputs = model(images)
+                loss = criterion(outputs, labels)
+            
             loss.backward()
             optimizer.step()
 
-            # Updating loss and tally information
             running_loss += loss.item()
             _, predicted = outputs.max(1)
             correct += predicted.eq(labels).sum().item()
             total += labels.size(0)
+
+        if scheduler:
+            scheduler.step()
         
         print(f"Epoch [{epoch+1}/{epochs}], Loss: {running_loss/len(train_loader):.4f}, Accuracy: {correct/total:.4f}")
         
     # Save checkpoint
     torch.save(model.state_dict(), save_path)
-
-# Function that trains ResNet18 on full train and train retain sets
-# Used primarily in hyperparameter tuning process
-def train_resnet(train_loader, train_retain_loader, dataset, args=None):
-    
-    # Get ResNet model
-    model = get_resnet_model(dataset)
-
-    # Define some training variables
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
-    epochs = args.epochs
-    full_path = args.full_path
-    retain_path = args.retain_path
-
-    # Train on the entire train dataset
-    print("Training ResNet18 model on the full dataset...")
-    train(model, train_loader, criterion, optimizer, epochs, full_path)
-
-    # Reset model weights and optimizer
-    model = get_resnet_model(dataset)
-    optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
-
-    # Train on the retain set
-    print("Training the ResNet model on the train retain dataset...")
-    train(model, train_retain_loader, criterion, optimizer, epochs, retain_path)
-
-    # Indicate that training is finished
-    print('Training Complete!')
 
 def load_model(dataset, checkpoint_path="resnet_cifar.pt"):
     model = get_resnet_model(dataset)
