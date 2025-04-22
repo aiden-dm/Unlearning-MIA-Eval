@@ -56,10 +56,13 @@ def train(model, train_loader, criterion, optimizer, epochs=10, scheduler=None, 
             correct += predicted.eq(labels).sum().item()
             total += labels.size(0)
 
+        epoch_loss = running_loss / len(train_loader)
+        epoch_acc = correct / total
+
         if scheduler:
-            scheduler.step()
+            scheduler.step(epoch_loss)
         
-        print(f"Epoch [{epoch+1}/{epochs}], Loss: {running_loss/len(train_loader):.4f}, Accuracy: {correct/total:.4f}")
+        print(f"Epoch [{epoch+1}/{epochs}], Loss: {epoch_loss:.4f}, Accuracy: {epoch_acc:.4f}")
         
     # Save checkpoint
     torch.save(model.state_dict(), save_path)
