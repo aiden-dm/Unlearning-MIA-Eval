@@ -218,8 +218,9 @@ def run_experiment(experiment_params, unlearn_methods, seed):
             
             if method == 'retrain':
 
-                if not os.path.isfile(unl_args.check_path):
-                    retrain_path = f"/content/drive/MyDrive/AIML_Final_Project/checkpoints/retrain_cls_{forget_string}_{experiment_params['dataset']['name']}.pt" 
+                unl_args.check_path = f"/content/drive/MyDrive/AIML_Final_Project/checkpoints/retrain_cls_{forget_string}_{experiment_params['dataset']['name']}.pt"
+
+                if not os.path.isfile(unl_args.check_path): 
                     unl_model = experiment_params['retrain']['model']
                     train(
                         model=unl_model, 
@@ -228,7 +229,7 @@ def run_experiment(experiment_params, unlearn_methods, seed):
                         optimizer=experiment_params['retrain']['optimizer'], 
                         epochs=experiment_params['retrain']['epochs'],
                         scheduler=experiment_params['retrain']['scheduler'], 
-                        save_path = retrain_path
+                        save_path = unl_args.check_path
                     )
                 else:
                     print(f'Retrain Unlearning Unnecessary, Checkpoint Exists for Class/Classes {forget_string}')
