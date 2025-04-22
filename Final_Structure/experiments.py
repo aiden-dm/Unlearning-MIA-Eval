@@ -116,7 +116,7 @@ def init_cifar100_params(experiment_params):
     args.factor = 0.1
     args.patience = 5
     args.epochs = 65
-    args.dataset = 'cifar10'
+    args.dataset = 'cifar100'
     experiment_params['full_train'] = {
         'args': args
     }
@@ -128,7 +128,7 @@ def init_cifar100_params(experiment_params):
     args.factor = 0.1
     args.patience = 5
     args.epochs = 65
-    args.dataset = 'cifar10'
+    args.dataset = 'cifar100'
     experiment_params['retrain'] = {
         'args': args
     }
