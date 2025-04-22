@@ -233,7 +233,7 @@ def run_experiment(experiment_params, unlearn_methods, seed):
                     )
                 else:
                     print(f'Retrain Unlearning Unnecessary, Checkpoint Exists for Class/Classes {forget_string}')
-                    unl_model = load_model(unl_args.check_path)
+                    unl_model = load_model(experiment_params['dataset']['name'], unl_args.check_path)
                     
             elif method == 'SCRUB':
                 
@@ -245,7 +245,7 @@ def run_experiment(experiment_params, unlearn_methods, seed):
                     unl_model, _ = scrub(full_model_path, loaders, unl_args)
                 else:
                     print(f'SCRUB Unlearning Unnecessary, Checkpoint Exists for Class Class/Classes {forget_string}')
-                    unl_model = load_model(unl_args.check_path)
+                    unl_model = load_model(experiment_params['dataset']['name'], unl_args.check_path)
             
             elif method == 'BadTeach':
                 
@@ -257,7 +257,7 @@ def run_experiment(experiment_params, unlearn_methods, seed):
                     unl_model, _ = badt(full_model_path, loaders, unl_args)
                 else:
                     print(f'BadTeach Unlearning Unnecessary, Checkpoint Exists for Class {forget_string}')
-                    unl_model = load_model(unl_args.check_path)
+                    unl_model = load_model(experiment_params['dataset']['name'], unl_args.check_path)
 
             else:
                 
@@ -269,7 +269,7 @@ def run_experiment(experiment_params, unlearn_methods, seed):
                     unl_model, _ = ssd(full_model_path, loaders, unl_args)
                 else:
                     print(f'SSD Unlearning Unnecessary, Checkpoint Exists for Class {forget_string}')
-                    unl_model = load_model(unl_args.check_path)
+                    unl_model = load_model(experiment_params['dataset']['name'], unl_args.check_path)
 
             # Get performance evaluation information
             retain_metrics = evaluate_model(unl_model, train_retain_loader, 'cuda')
