@@ -47,12 +47,6 @@ def ssd(full_model_path, loaders, args):
     # Calculate the importances of D (see paper); this can also be done at any point before forgetting.
     original_importances = pdr.calc_importance(train_loader)
 
-    print(train_validation(model, 
-                            train_retain_loader, 
-                            train_forget_loader, 
-                            valid_retain_loader, 
-                            valid_forget_loader))
-
     # Dampen selected parameters
     pdr.modify_weight(original_importances, sample_importances)
 
@@ -62,6 +56,8 @@ def ssd(full_model_path, loaders, args):
                                 train_forget_loader, 
                                 valid_retain_loader, 
                                 valid_forget_loader)
+    
+    print(acc_dict)
     
     # Save model checkpoint
     torch.save(model.state_dict(), args.check_path)
