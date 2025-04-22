@@ -374,7 +374,7 @@ def run_experiment(experiment_params, unlearn_methods, seed):
     print()
 
     # Create the membership inference attack table
-    mia_df = create_mia_table(unlearn_methods, forget_lists_strings, all_metrics_data)
+    mia_df = create_mia_table(unlearn_methods, forget_lists_strings, all_mia_data)
 
     # Print nicely
     print(tabulate(mia_df, headers='keys', tablefmt='pretty'))
