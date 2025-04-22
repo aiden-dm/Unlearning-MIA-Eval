@@ -19,7 +19,16 @@ from Final_Structure.badt import badt
 from Final_Structure.ssd import ssd
 from Final_Structure.evaluate import evaluate_model, membership_inference_attack
 
-def init_cifar10_params(experiment_params, dataset):
+def init_experiment_resnet18(args):
+    model = get_resnet_model(args.dataset)
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
+    criterion = nn.CrossEntropyLoss()
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer, mode=args.mode, factor=args.factor, patience=args.patience
+    )
+    return model, optimizer, criterion, scheduler
+
+def init_cifar10_params(experiment_params):
     # Add dataset specific variables
     forget_lists = [[i] for i in range(10)]
     forget_lists_strings = [str(row[0]) for row in forget_lists]
@@ -30,33 +39,27 @@ def init_cifar10_params(experiment_params, dataset):
     }
 
     # ResNet18 parameters for full train dataset
-    model = get_resnet_model(dataset)
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-    criterion = nn.CrossEntropyLoss()
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode='min', factor=0.1, patience=5, verbose=True
-    )
-    experiment_params["full_train"] = {
-        'model': model,
-        'optimizer': optimizer,
-        'criterion': criterion,
-        'scheduler': scheduler,
-        'epochs': 45
+    args = SimpleNamespace()
+    args.learning_rate = 0.001
+    args.mode = 'min'
+    args.factor = 0.1
+    args.patience = 5
+    args.epochs = 45
+    args.dataset = 'cifar10'
+    experiment_params['full_train'] = {
+        'args': args
     }
     
     # ResNet18 parameters for train retain dataset
-    model = get_resnet_model(dataset)
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-    criterion = nn.CrossEntropyLoss()
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode='min', factor=0.1, patience=5, verbose=True
-    )
-    experiment_params["retrain"] = {
-        'model': model,
-        'optimizer': optimizer,
-        'criterion': criterion,
-        'scheduler': scheduler,
-        'epochs': 45
+    args = SimpleNamespace()
+    args.learning_rate = 0.001
+    args.mode = 'min'
+    args.factor = 0.1
+    args.patience = 5
+    args.epochs = 45
+    args.dataset = 'cifar10'
+    experiment_params['retrain'] = {
+        'args': args
     }
 
     # SCRUB parameters
@@ -96,7 +99,7 @@ def init_cifar10_params(experiment_params, dataset):
         'args': args
     }
 
-def init_cifar100_params(experiment_params, dataset):
+def init_cifar100_params(experiment_params):
     # Add dataset specific variables
     forget_lists = [list(range(i, i + 10)) for i in range(0, 100, 10)]
     forget_lists_strings = [f"{row[0]}-{row[-1]}" for row in forget_lists]
@@ -107,33 +110,27 @@ def init_cifar100_params(experiment_params, dataset):
     }
 
     # ResNet18 parameters for full train dataset
-    model = get_resnet_model(dataset)
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-    criterion = nn.CrossEntropyLoss()
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode='min', factor=0.1, patience=5, verbose=True
-    )
-    experiment_params["full_train"] = {
-        'model': model,
-        'optimizer': optimizer,
-        'criterion': criterion,
-        'scheduler': scheduler,
-        'epochs': 65
+    args = SimpleNamespace()
+    args.learning_rate = 0.001
+    args.mode = 'min'
+    args.factor = 0.1
+    args.patience = 5
+    args.epochs = 65
+    args.dataset = 'cifar10'
+    experiment_params['full_train'] = {
+        'args': args
     }
     
     # ResNet18 parameters for train retain dataset
-    model = get_resnet_model(dataset)
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-    criterion = nn.CrossEntropyLoss()
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode='min', factor=0.1, patience=5, verbose=True
-    )
-    experiment_params["retrain"] = {
-        'model': model,
-        'optimizer': optimizer,
-        'criterion': criterion,
-        'scheduler': scheduler,
-        'epochs': 65
+    args = SimpleNamespace()
+    args.learning_rate = 0.001
+    args.mode = 'min'
+    args.factor = 0.1
+    args.patience = 5
+    args.epochs = 65
+    args.dataset = 'cifar10'
+    experiment_params['retrain'] = {
+        'args': args
     }
 
     # SCRUB parameters
@@ -261,13 +258,14 @@ def run_experiment(experiment_params, unlearn_methods, seed):
     loaders = get_loaders(root=root_path, dataset=experiment_params['dataset']['name'], forget_classes=forget_classes, seed=seed)
     full_model_path = f"/content/drive/MyDrive/AIML_Final_Project/checkpoints/resnet_full_{experiment_params['dataset']['name']}.pt"
     if not os.path.isfile(full_model_path):
+        full_model, full_optimizer, full_criterion, full_scheduler = init_experiment_resnet18(experiment_params['full_train']['args'])
         train(
-            model=experiment_params['full_train']['model'], 
+            model=full_model, 
             train_loader=loaders[0], 
-            criterion=experiment_params['full_train']['criterion'], 
-            optimizer=experiment_params['full_train']['optimizer'], 
-            epochs=experiment_params['full_train']['epochs'],
-            scheduler=experiment_params['full_train']['scheduler'], 
+            criterion=full_criterion, 
+            optimizer=full_optimizer, 
+            epochs=experiment_params['full_train']['args'].epochs,
+            scheduler=full_scheduler, 
             save_path=full_model_path
         )
     else:
@@ -298,14 +296,14 @@ def run_experiment(experiment_params, unlearn_methods, seed):
                 unl_args.check_path = f"/content/drive/MyDrive/AIML_Final_Project/checkpoints/retrain_cls_{forget_string}_{experiment_params['dataset']['name']}.pt"
 
                 if not os.path.isfile(unl_args.check_path): 
-                    unl_model = experiment_params['retrain']['model']
+                    unl_model, unl_optimizer, unl_criterion, unl_scheduler = init_experiment_resnet18(experiment_params['dataset']['name'])
                     train(
                         model=unl_model, 
                         train_loader=train_retain_loader, 
-                        criterion=experiment_params['retrain']['criterion'], 
-                        optimizer=experiment_params['retrain']['optimizer'], 
-                        epochs=experiment_params['retrain']['epochs'],
-                        scheduler=experiment_params['retrain']['scheduler'], 
+                        criterion=unl_criterion, 
+                        optimizer=unl_optimizer, 
+                        epochs=experiment_params['retrain']['args'].epochs,
+                        scheduler=unl_scheduler, 
                         save_path = unl_args.check_path
                     )
                 else:
@@ -402,9 +400,9 @@ def main():
     # Define experiment parameters depending on dataset
     experiment_params = dict()
     if args.dataset == "cifar10":
-        init_cifar10_params(experiment_params, args.dataset)
+        init_cifar10_params(experiment_params)
     elif args.dataset == "cifar100":
-        init_cifar100_params(experiment_params, args.dataset)   
+        init_cifar100_params(experiment_params)   
     else:
         print("Inputted unknown dataset!")
 
