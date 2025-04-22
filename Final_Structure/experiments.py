@@ -90,7 +90,6 @@ def init_cifar100_params(experiment_params, dataset):
     args.learning_rate = 0.001
     args.dampening_constant = 10
     args.selection_weighting = 1
-    args.check_path = '/content/Unlearning-MIA-Eval/Final_Structure/checkpoints/ssd.pt'
     args.print_accuracies = True
     args.dataset = 'cifar100'
     experiment_params['ssd'] = {
@@ -183,7 +182,7 @@ def run_experiment(experiment_params, unlearn_methods, seed):
     root_path = '/content/Unlearning-MIA-Eval/Final_Structure/data'
     forget_classes = [0]  # Number in here is irrelevant
     loaders = get_loaders(root=root_path, forget_classes=forget_classes, seed=seed)
-    full_model_path = f'/content/drive/MyDrive/AIML_Final_Project/checkpoints/resnet_full_{experiment_params['dataset']['name']}.pt'
+    full_model_path = f"/content/drive/MyDrive/AIML_Final_Project/checkpoints/resnet_full_{experiment_params['dataset']['name']}.pt"
     if not os.path.isfile(full_model_path):
         train(
             model=experiment_params['full_train']['model'], 
@@ -220,7 +219,7 @@ def run_experiment(experiment_params, unlearn_methods, seed):
             if method == 'retrain':
 
                 if not os.path.isfile(unl_args.check_path):
-                    retrain_path = f'/content/drive/MyDrive/AIML_Final_Project/checkpoints/retrain_cls_{forget_string}_{experiment_params['dataset']['name']}.pt' 
+                    retrain_path = f"/content/drive/MyDrive/AIML_Final_Project/checkpoints/retrain_cls_{forget_string}_{experiment_params['dataset']['name']}.pt" 
                     unl_model = experiment_params['retrain']['model']
                     train(
                         model=unl_model, 
@@ -238,7 +237,7 @@ def run_experiment(experiment_params, unlearn_methods, seed):
             elif method == 'SCRUB':
                 
                 unl_args = experiment_params['scrub']['args']
-                unl_args.check_path = f'/content/drive/MyDrive/AIML_Final_Project/checkpoints/scrub_cls_{forget_string}_{experiment_params['dataset']['name']}.pt'
+                unl_args.check_path = f"/content/drive/MyDrive/AIML_Final_Project/checkpoints/scrub_cls_{forget_string}_{experiment_params['dataset']['name']}.pt"
                 
                 if not os.path.isfile(unl_args.check_path):
                     print(f'Performing SCRUB Unlearning on Class Class/Classes {forget_string}')
@@ -250,7 +249,7 @@ def run_experiment(experiment_params, unlearn_methods, seed):
             elif method == 'BadTeach':
                 
                 unl_args = experiment_params['badt']['args']
-                unl_args.check_path = f'/content/drive/MyDrive/AIML_Final_Project/checkpoints/badt_cls_{forget_string}_{experiment_params['dataset']['name']}.pt'
+                unl_args.check_path = f"/content/drive/MyDrive/AIML_Final_Project/checkpoints/badt_cls_{forget_string}_{experiment_params['dataset']['name']}.pt"
 
                 if not os.path.isfile(unl_args.check_path):
                     print(f'Performing BadTeach Unlearning on Class {forget_string}')
@@ -262,7 +261,7 @@ def run_experiment(experiment_params, unlearn_methods, seed):
             else:
                 
                 unl_args = experiment_params['ssd']['args']
-                unl_args.check_path = f'/content/drive/MyDrive/AIML_Final_Project/checkpoints/ssd_cls_{forget_string}_{experiment_params['dataset']['name']}.pt'
+                unl_args.check_path = f"/content/drive/MyDrive/AIML_Final_Project/checkpoints/ssd_cls_{forget_string}_{experiment_params['dataset']['name']}.pt"
                 
                 if not os.path.isfile(unl_args.check_path):
                     print(f'Performing SSD Unlearning on Class {forget_string}')
@@ -304,9 +303,9 @@ def run_experiment(experiment_params, unlearn_methods, seed):
     print(tabulate(mia_df, headers='keys', tablefmt='pretty'))
 
     # Saving data tables locally
-    r_performance_df.to_pickle(f'/content/drive/MyDrive/AIML_Final_Project/retain_performance_train_{experiment_params['dataset']['name']}.pkl')
-    f_performance_df.to_pickle(f'/content/drive/MyDrive/AIML_Final_Project/forget_performance_train_{experiment_params['dataset']['name']}.pkl')
-    mia_df.to_pickle(f'/content/drive/MyDrive/AIML_Final_Project/mia_results_{experiment_params['dataset']['name']}.pkl')
+    r_performance_df.to_pickle(f"/content/drive/MyDrive/AIML_Final_Project/retain_performance_train_{experiment_params['dataset']['name']}.pkl")
+    f_performance_df.to_pickle(f"/content/drive/MyDrive/AIML_Final_Project/forget_performance_train_{experiment_params['dataset']['name']}.pkl")
+    mia_df.to_pickle(f"/content/drive/MyDrive/AIML_Final_Project/mia_results_{experiment_params['dataset']['name']}.pkl")
 
 def main():
     # Create argument parser
