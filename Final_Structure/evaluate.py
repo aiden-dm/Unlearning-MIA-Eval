@@ -11,9 +11,33 @@ from sklearn.metrics import (
     classification_report,
     confusion_matrix
 )
+from sklearn.utils import resample
 import numpy as np
-import random
 import pandas as pd
+import matplotlib.pyplot as plt
+
+def plot_tuning_accs(history):
+    plt.plot(history['epoch_list'], history['tr_accs'], marker='*', color=u'#1f77b4', alpha=1, label='Train Retain Set')
+    plt.plot(history['epoch_list'], history['tf_accs'], marker='o', color=u'#ff7f0e', alpha=1, label='Train Forget Set')
+    plt.plot(history['epoch_list'], history['vr_accs'], marker='^', color=u'#2ca02c', alpha=1, label='Validation Retain Set')
+    plt.plot(history['epoch_list'], history['vf_accs'], marker='.', color='red', alpha=1, label='Validation Forget Set')
+    plt.legend(prop={'size': 14})
+    plt.tick_params(labelsize=12)
+    plt.xlabel('epoch',size=14)
+    plt.ylabel('accuracy (%)',size=14)
+    plt.grid()
+    plt.show()
+
+def plot_loss_distributions(test_losses, forget_losses, bins=50):
+    plt.figure()
+    bins = np.linspace(0, 15, 150)
+    plt.hist(test_losses,  bins=bins, density=True, alpha=0.6, label="Test")
+    plt.hist(forget_losses,bins=bins, density=True, alpha=0.6, label="Forgotten")
+    plt.xlabel("Cross‑Entropy Loss")
+    plt.ylabel("Count")
+    plt.title("Loss Distributions: Test vs Forgotten")
+    plt.legend()
+    plt.show()
 
 def compute_accuracy(model, loader, device='cuda'):
     model.eval()
@@ -24,17 +48,17 @@ def compute_accuracy(model, loader, device='cuda'):
         for batch in loader:
             x, y = batch
             x, y = x.to(device), y.to(device)
-            
+
             # Forward pass
             outputs = model(x)
-            
+
             # Get the predicted class by taking the argmax along the class dimension
             _, predicted = torch.max(outputs, 1)
-            
+
             # Count correct predictions
             correct += (predicted == y).sum().item()
             total += y.size(0)
-    
+
     accuracy = 100 * correct / total
     return accuracy
 
@@ -126,11 +150,11 @@ def cm_score(estimator, X, y):
         'FPR': FPR, 'FNR': FNR, 'FDR': FDR,
         'ACC': ACC
     }
-    
+
     return metrics
 
 def evaluate_attack_model(sample_loss, members, n_splits = 5, random_state = None):
-    
+
     attack_model = LogisticRegression()
     cv = StratifiedShuffleSplit(n_splits=n_splits, random_state=random_state)
 
@@ -145,8 +169,8 @@ def evaluate_attack_model(sample_loss, members, n_splits = 5, random_state = Non
         all_metrics.append(fold_metrics)
 
     return all_metrics
-    
-def membership_inference_attack(model, t_loader, f_loader, device, seed):
+
+def membership_inference_attack(model, t_loader, f_loader, device, seed, plot_dist):
 
     # Initialization
     cr = nn.CrossEntropyLoss(reduction='none')
@@ -154,35 +178,40 @@ def membership_inference_attack(model, t_loader, f_loader, device, seed):
     forget_losses = []
     model.eval()
 
-    # Calculating test losses
+    # Calculating test losses for class 0-9 (members)
     for batch_idx, (data, target) in enumerate(t_loader):
         data, target = data.to(device), target.to(device)
         output = model(data)
         loss = cr(output, target)
         test_losses.extend(loss.cpu().detach().numpy())
 
-    # Calculating forget losses
+    # Calculating forget losses for class 1 (forgotten class)
     for batch_idx, (data, target) in enumerate(f_loader):
         data, target = data.to(device), target.to(device)
         output = model(data)
         loss = cr(output, target)
         forget_losses.extend(loss.cpu().detach().numpy())
 
-    # Ensuring test and forget losses are same length
-    if len(forget_losses) > len(test_losses):
-        forget_losses = list(random.sample(forget_losses, len(test_losses)))
-    elif len(test_losses) > len(forget_losses):
-        test_losses = list(random.sample(test_losses, len(forget_losses)))
+    # Plot the distributions of losses
+    if plot_dist:
+        plot_loss_distributions(test_losses, forget_losses)
+
+    # Undersample the majority class (test data)
+    if len(test_losses) > len(forget_losses):
+        test_losses = resample(test_losses, replace=False, n_samples=len(forget_losses), random_state=seed)
+    elif len(forget_losses) > len(test_losses):
+        forget_losses = resample(forget_losses, replace=False, n_samples=len(test_losses), random_state=seed)
 
     # Preparing data for evaluation
-    test_labels = [0]*len(test_losses)
-    forget_labels = [1]*len(forget_losses)
-    features = np.array(test_losses + forget_losses).reshape(-1,1)
+    test_labels = [0] * len(test_losses)  # Members (test set)
+    forget_labels = [1] * len(forget_losses)  # Non-members (forgotten set)
+    features = np.array(test_losses + forget_losses).reshape(-1, 1)
     labels = np.array(test_labels + forget_labels).reshape(-1)
-    features = np.clip(features, -100, 100)
+
+    # Evaluate the attack model
     all_metrics = evaluate_attack_model(features, labels, n_splits=5, random_state=seed)
 
-    # Calculating mean and std for each metric
+    # Calculate mean and std for each metric
     df_metrics = pd.DataFrame(all_metrics)
     mean_metrics = df_metrics.mean()
     std_metrics = df_metrics.std()
