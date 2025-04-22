@@ -175,8 +175,8 @@ def create_mia_table(unlearn_methods, forget_lists_strings, all_mia_data):
 def run_experiment(experiment_params, unlearn_methods, seed):
 
     # Initialize variables for experiment loop
-    forget_lists = experiment_params['forget_lists']
-    forget_lists_strings = experiment_params['forget_lists_strings']
+    forget_lists = experiment_params['dataset']['forget_lists']
+    forget_lists_strings = experiment_params['dataset']['forget_lists_strings']
 
     # Train the full version of the ResNet18 model
     root_path = '/content/Unlearning-MIA-Eval/Final_Structure/data'
