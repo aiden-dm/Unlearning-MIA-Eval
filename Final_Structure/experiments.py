@@ -172,7 +172,7 @@ def init_cifar100_params(experiment_params):
 
 def create_post_unlearn_tables(unlearn_methods, forget_lists_strings, all_metrics_data):
     # Define headers for results tables
-    performance_cols = ['Forgotten Class', 'Method', 'Accuracy', 'Precision', 'Recall', 'F1 Score']
+    performance_cols = ['Forgotten Classes', 'Method', 'Accuracy', 'Precision', 'Recall', 'F1 Score']
 
     # Initialize empty DataFrames with proper headers
     f_performance_df = pd.DataFrame(columns=performance_cols)
@@ -213,7 +213,7 @@ def create_post_unlearn_tables(unlearn_methods, forget_lists_strings, all_metric
 
 def create_mia_table(unlearn_methods, forget_lists_strings, all_mia_data):
     # Create the membership inference attack table
-    mia_cols = ['Forgotten Class', 'Method', 'ACC', 
+    mia_cols = ['Forgotten Classes', 'Method', 'ACC', 
                 'TP', 'TN', 'FP', 'FN', 
                 'TPR', 'TNR', 'PPV', 'NPV',
                 'FPR', 'FNR', 'FDR']
@@ -226,7 +226,7 @@ def create_mia_table(unlearn_methods, forget_lists_strings, all_mia_data):
             forget_string = forget_lists_strings[i]
             method = unlearn_methods[j]
             row = {
-                'Forgotten Class': forget_string, 
+                'Forgotten Classes': forget_string, 
                 'Method': method, 
                 'ACC': f'{mean_metrics["ACC"]:.2f}±{std_metrics["ACC"]:.2f}', 
                 'TP': f'{mean_metrics["TP"]:.2f}±{std_metrics["TP"]:.2f}',
