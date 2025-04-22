@@ -19,6 +19,83 @@ from Final_Structure.badt import badt
 from Final_Structure.ssd import ssd
 from Final_Structure.evaluate import evaluate_model, membership_inference_attack
 
+def init_cifar10_params(experiment_params, dataset):
+    # Add dataset specific variables
+    forget_lists = [[i] for i in range(10)]
+    forget_lists_strings = [str(row[0]) for row in forget_lists]
+    experiment_params['dataset'] = {
+        'name': 'cifar10',
+        'forget_lists': forget_lists,
+        'forget_lists_strings': forget_lists_strings
+    }
+
+    # ResNet18 parameters for full train dataset
+    model = get_resnet_model(dataset)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+    criterion = nn.CrossEntropyLoss()
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer, mode='min', factor=0.1, patience=5, verbose=True
+    )
+    experiment_params["full_train"] = {
+        'model': model,
+        'optimizer': optimizer,
+        'criterion': criterion,
+        'scheduler': scheduler,
+        'epochs': 45
+    }
+    
+    # ResNet18 parameters for train retain dataset
+    model = get_resnet_model(dataset)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+    criterion = nn.CrossEntropyLoss()
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer, mode='min', factor=0.1, patience=5, verbose=True
+    )
+    experiment_params["retrain"] = {
+        'model': model,
+        'optimizer': optimizer,
+        'criterion': criterion,
+        'scheduler': scheduler,
+        'epochs': 45
+    }
+
+    # SCRUB parameters
+    args = SimpleNamespace()
+    args.epochs = 15
+    args.learning_rate = 0.0001
+    args.msteps = 10
+    args.t_opt_gamma = 1
+    args.t_opt_alpha = 0.0
+    args.kd_T = 2
+    args.print_accuracies = True
+    args.dataset = 'cifar10'
+    experiment_params['scrub'] = {
+        'args': args
+    }
+
+    # BadTeach parameters
+    args = SimpleNamespace()
+    args.epochs = 7
+    args.learning_rate = 0.0001
+    args.KL_temperature = 4
+    args.batch_size = 256
+    args.print_accuracies = True
+    args.dataset = 'cifar10'
+    experiment_params['badt'] = {
+        'args': args
+    }
+
+    # SSD parameters
+    args = SimpleNamespace()
+    args.learning_rate = 0.001
+    args.dampening_constant = 10
+    args.selection_weighting = 1
+    args.print_accuracies = True
+    args.dataset = 'cifar10'
+    experiment_params['ssd'] = {
+        'args': args
+    }
+
 def init_cifar100_params(experiment_params, dataset):
     # Add dataset specific variables
     forget_lists = [list(range(i, i + 10)) for i in range(0, 100, 10)]
@@ -325,7 +402,7 @@ def main():
     # Define experiment parameters depending on dataset
     experiment_params = dict()
     if args.dataset == "cifar10":
-        print()
+        init_cifar10_params(experiment_params, args.dataset)
     elif args.dataset == "cifar100":
         init_cifar100_params(experiment_params, args.dataset)   
     else:
