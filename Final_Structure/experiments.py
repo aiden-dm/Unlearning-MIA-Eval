@@ -296,7 +296,7 @@ def run_experiment(experiment_params, unlearn_methods, seed):
                 unl_args.check_path = f"/content/drive/MyDrive/AIML_Final_Project/checkpoints/retrain_cls_{forget_string}_{experiment_params['dataset']['name']}.pt"
 
                 if not os.path.isfile(unl_args.check_path): 
-                    unl_model, unl_optimizer, unl_criterion, unl_scheduler = init_experiment_resnet18(experiment_params['dataset']['name'])
+                    unl_model, unl_optimizer, unl_criterion, unl_scheduler = init_experiment_resnet18(experiment_params['retrain']['args'])
                     train(
                         model=unl_model, 
                         train_loader=train_retain_loader, 
