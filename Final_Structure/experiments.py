@@ -279,7 +279,8 @@ def run_experiment(experiment_params, unlearn_methods, seed):
                 test_forget_loader,
                 train_forget_loader,
                 device='cuda',
-                seed=seed
+                seed=seed,
+                plot_dist=False
             )
             metrics_data.append((retain_metrics, forget_metrics))
             mia_data.append((mia_mean_metrics, mia_std_metrics))
