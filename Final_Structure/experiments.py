@@ -181,7 +181,7 @@ def run_experiment(experiment_params, unlearn_methods, seed):
     # Train the full version of the ResNet18 model
     root_path = '/content/Unlearning-MIA-Eval/Final_Structure/data'
     forget_classes = [0]  # Number in here is irrelevant
-    loaders = get_loaders(root=root_path, forget_classes=forget_classes, seed=seed)
+    loaders = get_loaders(root=root_path, dataset=experiment_params['dataset']['name'], forget_classes=forget_classes, seed=seed)
     full_model_path = f"/content/drive/MyDrive/AIML_Final_Project/checkpoints/resnet_full_{experiment_params['dataset']['name']}.pt"
     if not os.path.isfile(full_model_path):
         train(
@@ -203,7 +203,7 @@ def run_experiment(experiment_params, unlearn_methods, seed):
         
         # Getting all the loaders
         root_path = '/content/Unlearning-MIA-Eval/Final_Structure/data'
-        loaders = get_loaders(root=root_path, forget_classes=forget_list, seed=seed)
+        loaders = get_loaders(root=root_path, dataset=experiment_params['dataset']['name'], forget_classes=forget_list, seed=seed)
         train_forget_loader = loaders[3]
         train_retain_loader = loaders[4]
         test_forget_loader = loaders[7]
