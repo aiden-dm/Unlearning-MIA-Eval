@@ -394,6 +394,8 @@ def run_experiment(experiment_params, unlearn_methods, seed):
     # Saving data tables locally
     r_performance_df.to_pickle(f"/content/drive/MyDrive/AIML_Final_Project/retain_performance_train_{experiment_params['dataset']['name']}.pkl")
     f_performance_df.to_pickle(f"/content/drive/MyDrive/AIML_Final_Project/forget_performance_train_{experiment_params['dataset']['name']}.pkl")
+    test_r_performance_df.to_pickle(f"/content/drive/MyDrive/AIML_Final_Project/retain_performance_test_{experiment_params['dataset']['name']}.pkl")
+    test_f_performance_df.to_pickle(f"/content/drive/MyDrive/AIML_Final_Project/forget_performance_test_{experiment_params['dataset']['name']}.pkl")
     mia_df.to_pickle(f"/content/drive/MyDrive/AIML_Final_Project/mia_results_{experiment_params['dataset']['name']}.pkl")
 
 def main():
