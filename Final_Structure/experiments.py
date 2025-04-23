@@ -273,6 +273,7 @@ def run_experiment(experiment_params, unlearn_methods, seed):
 
     # Start experiment loop
     all_metrics_data = []
+    all_test_metrics_data = []
     all_mia_data = []
     for forget_list, forget_string in zip(forget_lists, forget_lists_strings):
         
@@ -282,9 +283,11 @@ def run_experiment(experiment_params, unlearn_methods, seed):
         train_forget_loader = loaders[3]
         train_retain_loader = loaders[4]
         test_forget_loader = loaders[7]
+        test_retain_loader = loaders[8]
 
         # Perform unlearning methods
         metrics_data = []
+        test_metrics_data = []
         mia_data = []
         for method in unlearn_methods:
 
@@ -349,6 +352,8 @@ def run_experiment(experiment_params, unlearn_methods, seed):
             # Get performance evaluation information
             retain_metrics = evaluate_model(unl_model, train_retain_loader, 'cuda')
             forget_metrics = evaluate_model(unl_model, train_forget_loader, 'cuda')
+            test_retain_metrics = evaluate_model(unl_model, test_retain_loader, 'cuda')
+            test_forget_metrics = evaluate_model(unl_model, test_forget_loader, 'cuda')
             mia_mean_metrics, mia_std_metrics = membership_inference_attack(
                 unl_model,
                 test_forget_loader,
@@ -358,19 +363,26 @@ def run_experiment(experiment_params, unlearn_methods, seed):
                 plot_dist=False
             )
             metrics_data.append((retain_metrics, forget_metrics))
+            test_metrics_data.append((test_retain_metrics, test_forget_metrics))
             mia_data.append((mia_mean_metrics, mia_std_metrics))
 
         # Save the data for this class for use later
         all_metrics_data.append(metrics_data)
+        all_test_metrics_data.append(test_metrics_data)
         all_mia_data.append(mia_data)
 
     # Create Post Unlearning Train Tables
     r_performance_df, f_performance_df = create_post_unlearn_tables(unlearn_methods, forget_lists_strings, all_metrics_data)
+    test_r_performance_df, test_f_performance_df = create_post_unlearn_tables(unlearn_methods, forget_lists_strings, all_test_metrics_data)
 
     # Print nicely
     print(tabulate(r_performance_df, headers='keys', tablefmt='pretty'))
     print()
     print(tabulate(f_performance_df, headers='keys', tablefmt='pretty'))
+    print()
+    print(tabulate(test_r_performance_df, headers='keys', tablefmt='pretty'))
+    print()
+    print(tabulate(test_f_performance_df, headers='keys', tablefmt='pretty'))
     print()
 
     # Create the membership inference attack table
