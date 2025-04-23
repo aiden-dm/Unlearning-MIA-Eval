@@ -365,7 +365,7 @@ def run_experiment(experiment_params, unlearn_methods, seed):
         all_mia_data.append(mia_data)
 
     # Create Post Unlearning Train Tables
-    f_performance_df, r_performance_df = create_post_unlearn_tables(unlearn_methods, forget_lists_strings, all_metrics_data)
+    r_performance_df, f_performance_df = create_post_unlearn_tables(unlearn_methods, forget_lists_strings, all_metrics_data)
 
     # Print nicely
     print(tabulate(r_performance_df, headers='keys', tablefmt='pretty'))
