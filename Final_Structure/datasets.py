@@ -86,14 +86,10 @@ def set_seed(seed=42):
     np.random.seed(seed)
     random.seed(seed)
 
-def get_loaders(root, dataset, forget_classes, seed):
+def get_loaders(root, dataset, forget_classes, validation_split=0.2, batch_size=256, num_workers=2, seed=1):
     # Set the seed for repeatable dataloaders
     set_seed(seed)
     generator = torch.Generator().manual_seed(seed)
-
-    # Define hyperparameters
-    validation_split = 0.2
-    batch_size = 256
 
     # Load CIFAR-10 dataset
     if dataset == "cifar10":
@@ -111,24 +107,24 @@ def get_loaders(root, dataset, forget_classes, seed):
     train_full_subset = CustomDataset(train_data, train_targets, transform=train_set.transform)
     val_full_subset = CustomDataset(val_data, val_targets, transform=train_set.transform)
     test_full_subset = CustomDataset(test_set.data, test_set.targets, transform=test_set.transform)
-    train_loader = DataLoader(train_full_subset, batch_size=batch_size, shuffle=True, num_workers=8, generator=generator)
-    valid_loader = DataLoader(val_full_subset, batch_size=batch_size, shuffle=False, num_workers=8)
-    test_loader = DataLoader(test_full_subset, batch_size=batch_size, shuffle=False, num_workers=8)
+    train_loader = DataLoader(train_full_subset, batch_size=batch_size, shuffle=True, num_workers=num_workers, generator=generator)
+    valid_loader = DataLoader(val_full_subset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
+    test_loader = DataLoader(test_full_subset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
 
     # Creating train forget/retain loaders
     train_forget, train_retain = forget_retain_split(train_set, forget_classes)
-    train_forget_loader = DataLoader(train_forget, batch_size=batch_size, shuffle=True, num_workers=8, generator=generator)
-    train_retain_loader = DataLoader(train_retain, batch_size=batch_size, shuffle=True, num_workers=8, generator=generator)
+    train_forget_loader = DataLoader(train_forget, batch_size=batch_size, shuffle=True, num_workers=num_workers, generator=generator)
+    train_retain_loader = DataLoader(train_retain, batch_size=batch_size, shuffle=True, num_workers=num_workers, generator=generator)
 
     # Creating valid forget/retain loaders 
     valid_forget, valid_retain = forget_retain_split(val_full_subset, forget_classes)
-    valid_forget_loader = DataLoader(valid_forget, batch_size=batch_size, shuffle=False, num_workers=8)
-    valid_retain_loader = DataLoader(valid_retain, batch_size=batch_size, shuffle=False, num_workers=8)
+    valid_forget_loader = DataLoader(valid_forget, batch_size=batch_size, shuffle=False, num_workers=num_workers)
+    valid_retain_loader = DataLoader(valid_retain, batch_size=batch_size, shuffle=False, num_workers=num_workers)
 
     # Creating test forget/retain loaders
     test_forget, test_retain = forget_retain_split(test_full_subset, forget_classes)
-    test_forget_loader = DataLoader(test_forget, batch_size=batch_size, shuffle=False, num_workers=8)
-    test_retain_loader = DataLoader(test_retain, batch_size=batch_size, shuffle=False, num_workers=8)
+    test_forget_loader = DataLoader(test_forget, batch_size=batch_size, shuffle=False, num_workers=num_workers)
+    test_retain_loader = DataLoader(test_retain, batch_size=batch_size, shuffle=False, num_workers=num_workers)
     
     # Returning all loaders
     return [
