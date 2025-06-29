@@ -86,18 +86,25 @@ def set_seed(seed=42):
     np.random.seed(seed)
     random.seed(seed)
 
+def get_dataset(root, dataset_name="cifar10"):
+    train_set, test_set = None, None
+
+    if dataset_name == "cifar10":
+        train_set, test_set = cifar10(root, augment=True)
+    elif dataset_name == "cifar100":
+        train_set, test_set = cifar100(root, augment=True)
+
+    return train_set, test_set
+
 def get_loaders(root, dataset, forget_classes, validation_split=0.2, batch_size=256, num_workers=2, seed=1):
     # Set the seed for repeatable dataloaders
     set_seed(seed)
     generator = torch.Generator().manual_seed(seed)
 
     # Load CIFAR-10 dataset
-    if dataset == "cifar10":
-        train_set, test_set = cifar10(root, augment=True)
-    elif dataset == "cifar100":
-        train_set, test_set = cifar100(root, augment=True)
-    else:
-        raise RuntimeError("Inputted undefined dataset name!")
+    train_set, test_set = get_dataset(root, dataset_name=dataset)
+    if train_set is None or test_set is None:
+        raise RuntimeError(f"ERROR: {dataset} is an undefined dataset name!")
 
     # Creating full train, valid and test dataloaders
     num_train = len(train_set)
