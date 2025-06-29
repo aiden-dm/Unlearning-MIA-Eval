@@ -132,16 +132,19 @@ def get_loaders(root, dataset, forget_classes, validation_split=0.2, batch_size=
     test_forget, test_retain = forget_retain_split(test_full_subset, forget_classes)
     test_forget_loader = DataLoader(test_forget, batch_size=batch_size, shuffle=False, num_workers=num_workers)
     test_retain_loader = DataLoader(test_retain, batch_size=batch_size, shuffle=False, num_workers=num_workers)
+
+    # Create dictionary for easy access of loaders
+    loaders = {
+        'train_loader': train_loader,
+        'valid_loader': valid_loader,
+        'test_loader': test_loader,
+        'train_forget_loader': train_forget_loader,
+        'train_retain_loader': train_retain_loader,
+        'valid_forget_loader': valid_forget_loader,
+        'valid_retain_loader': valid_retain_loader,
+        'test_forget_loader': test_forget_loader,
+        'test_retain_loader': test_retain_loader
+    }
     
     # Returning all loaders
-    return [
-        train_loader, 
-        valid_loader, 
-        test_loader, 
-        train_forget_loader, 
-        train_retain_loader, 
-        valid_forget_loader,
-        valid_retain_loader, 
-        test_forget_loader, 
-        test_retain_loader
-    ]
+    return loaders

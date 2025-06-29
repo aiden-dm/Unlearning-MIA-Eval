@@ -1,23 +1,23 @@
 # Imports
 import sys
-import copy
 import torch
 
 # Adding necessary paths to the system path
 sys.path.append('/content/Unlearning-MIA-Eval')
 
-# Imports from local code
+# Framework imports
 from Final_Structure.training import load_model, get_resnet_model
 
-# Imports from the BadTeach GitHub repository
+# Third party code imports
 from Third_Party_Code.BadTeach.unlearn import blindspot_unlearner
 
 def badt(full_model_path, loaders, args):
+    
     # Unpacking the data loaders
-    train_forget_loader = loaders[3]
-    train_retain_loader = loaders[4]
-    valid_forget_loader = loaders[5]
-    valid_retain_loader = loaders[6]
+    train_forget_loader = loaders['train_forget_loader']
+    train_retain_loader = loaders['train_retain_loader']
+    valid_forget_loader = loaders['valid_forget_loader']
+    valid_retain_loader = loaders['valid_retain_loader']
 
     # Create ssd_loaders list for training validation
     badt_loaders = [
@@ -52,6 +52,7 @@ def badt(full_model_path, loaders, args):
                         print_accuracies = args.print_accuracies)
 
     # Save a copy of the student model as a checkpoint
-    torch.save(student_model.state_dict(), args.check_path)
+    if args.save_checkpoint:
+        torch.save(student_model.state_dict(), args.check_path)
 
     return student_model, history
