@@ -7,6 +7,6 @@
 [submodule "Third_Party_Code/BadTeach"]
 	path = Third_Party_Code/BadTeach
 	url = https://github.com/aiden-dm/bad-teaching-unlearning
-[submodule "/home/aiden/Documents/Unlearning-MIA-Eval/Third_Party_Code/MIADisparity"]
+[submodule "Third_Party_Code/MIADisparity"]
 	path = Third_Party_Code/MIADisparity
 	url = https://github.com/aiden-dm/mia-disparity.git
