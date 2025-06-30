@@ -42,12 +42,12 @@ def calibration_mia(target_model_path, loaders):
 
     config = {
         "seed": 2,
-        "batch_size": 256,
+        "batch_size": 128,
         "num_classes": 10,
-        "lr": 0.001,
-        "epochs": 45,
+        "lr": 0.01,
+        "epochs": 100,
         "num_shadow_models": 1,
-        "shadow_train_ratio": 0.5,
+        "shadow_train_ratio": 0.8,
         "save_path": "./mia_calibration",
         "log_path": "./mia_calibration/logs",
         "device": "cuda"
