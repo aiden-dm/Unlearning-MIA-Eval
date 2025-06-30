@@ -3,17 +3,17 @@ import copy
 import torch.nn as nn
 import torch.optim as optim
 import sys
-import matplotlib.pyplot as plt
 from types import SimpleNamespace
 import torch
 
 # Adding necessary paths to the system path
 sys.path.append('/content/Unlearning-MIA-Eval')
 
+# Framework imports
 from Final_Structure.evaluate import train_validation
 from Final_Structure.training import load_model
 
-# Imports from the SCRUB repository
+# Third party code imports
 from Third_Party_Code.SCRUB.thirdparty.repdistiller.distiller_zoo import DistillKL
 from Third_Party_Code.SCRUB.thirdparty.repdistiller.helper.loops import train_distill, validate
 
@@ -23,10 +23,10 @@ def scrub(full_model_path, loaders, args):
     model = load_model(dataset=args.dataset, checkpoint_path=full_model_path)
 
     # Extracting the loaders that we want
-    train_forget_loader = loaders[3]
-    train_retain_loader = loaders[4]
-    valid_forget_loader = loaders[5]
-    valid_retain_loader = loaders[6]
+    train_forget_loader = loaders['train_forget_loader']
+    train_retain_loader = loaders['train_retain_loader']
+    valid_forget_loader = loaders['valid_forget_loader']
+    valid_retain_loader = loaders['valid_retain_loader']
 
     # Defining hyperparameters
     kd_T = args.kd_T
@@ -108,7 +108,8 @@ def scrub(full_model_path, loaders, args):
             print(f"   vf_acc: {acc_dict['vf_acc']}")
 
     # Save a copy of the student model to use in evaluation
-    torch.save(model_s.state_dict(), args.check_path)
+    if args.save_checkpoint:
+        torch.save(model_s.state_dict(), args.check_path)
 
     history = {
         'losses': losses,

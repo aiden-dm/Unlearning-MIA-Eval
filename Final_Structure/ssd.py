@@ -5,28 +5,29 @@ import torch
 # Adding necessary paths to the system path
 sys.path.append('/content/Unlearning-MIA-Eval')
 
-# Importing from local code
+# Framework imports
 from Final_Structure.evaluate import train_validation
 from Final_Structure.training import load_model
 
-# Import from the SSD GitHub repository
+# Third party code imports
 import Third_Party_Code.SSD.src.ssd as ssd_file
 
 def ssd(full_model_path, loaders, args):
+    
     # Unpacking the data loaders
-    train_loader = loaders[0]
-    train_forget_loader = loaders[3]
-    train_retain_loader = loaders[4]
-    valid_forget_loader = loaders[5]
-    valid_retain_loader = loaders[6]
+    train_loader = loaders['train_loader']
+    train_forget_loader = loaders['train_forget_loader']
+    train_retain_loader = loaders['train_retain_loader']
+    valid_forget_loader = loaders['valid_forget_loader']
+    valid_retain_loader = loaders['valid_retain_loader']
 
     parameters = {
-        "lower_bound": 1,  # unused
-        "exponent": 1,  # unused
+        "lower_bound": 1,        # unused
+        "exponent": 1,           # unused
         "magnitude_diff": None,  # unused
-        "min_layer": -1,  # -1: all layers are available for modification
-        "max_layer": -1,  # -1: all layers are available for modification
-        "forget_threshold": 1,  # unused
+        "min_layer": -1,         # -1: all layers are available for modification
+        "max_layer": -1,         # -1: all layers are available for modification
+        "forget_threshold": 1,   # unused
         "dampening_constant": args.dampening_constant,   # Lambda from paper
         "selection_weighting": args.selection_weighting, # Alpha from paper
     }
@@ -57,10 +58,9 @@ def ssd(full_model_path, loaders, args):
                                 valid_retain_loader, 
                                 valid_forget_loader)
     
-    print(acc_dict)
-    
     # Save model checkpoint
-    torch.save(model.state_dict(), args.check_path)
+    if args.save_checkpoint:
+        torch.save(model.state_dict(), args.check_path)
     
     return model, acc_dict
 
