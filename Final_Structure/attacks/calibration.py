@@ -59,7 +59,7 @@ def calibration_mia(target_model_path, loaders):
     # Prepare the attack with retained data (members)
     attack.prepare(aux_dataset)
 
-    forget_scores = attack.infer(loaders['test_forget'].dataset)
+    forget_scores = attack.infer(loaders['test_forget_loader'].dataset)
     
     retain_scores = attack.infer(loaders['test_retain_loader'].dataset)
 
