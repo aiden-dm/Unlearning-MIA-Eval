@@ -24,12 +24,12 @@ def get_custom_resnet(dataset):
 
 def calibration_mia(target_model_path, loaders):
 
-    train_loader = loaders['train_loader']
-    valid_loader = loaders['valid_loader']
+    valid_retain_loader = loaders['valid_retain_loader']
+    test_retain_loader = loaders['test_retain_loader']
 
     aux_dataset = torch.utils.data.ConcatDataset([
-        train_loader.dataset,
-        valid_loader.dataset
+        valid_retain_loader.dataset,
+        test_retain_loader.dataset
     ])
 
     target_model = load_model("cifar10", target_model_path)
@@ -46,7 +46,7 @@ def calibration_mia(target_model_path, loaders):
         "num_classes": 10,
         "lr": 0.001,
         "epochs": 45,
-        "num_shadow_models": 5,
+        "num_shadow_models": 1,
         "shadow_train_ratio": 0.5,
         "save_path": "./mia_calibration",
         "log_path": "./mia_calibration/logs",
@@ -59,11 +59,8 @@ def calibration_mia(target_model_path, loaders):
     # Prepare the attack with retained data (members)
     attack.prepare(aux_dataset)
 
-    forget_scores = attack.infer(loaders['test_forget_loader'].dataset)
-    
-    retain_scores = attack.infer(loaders['test_retain_loader'].dataset)
-
-
+    forget_scores = attack.infer(loaders['train_forget_loader'].dataset)
+    retain_scores = attack.infer(loaders['train_retain_loader'].dataset)
 
     return {
         "forget_scores": forget_scores,
