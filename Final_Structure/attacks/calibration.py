@@ -13,9 +13,9 @@ from Third_Party_Code.MIADisparity.miae.attacks.calibration_mia import Calibrati
 
 def calibration_mia(target_model_path, loaders):
 
-    train_loader = loaders[0]
-    valid_loader = loaders[1]
-    test_forget_loader = loaders[7]
+    train_loader = loaders['train_loader']
+    valid_loader = loaders['valid_loader']
+    test_forget_loader = loaders['test_forget_loader']
 
     aux_dataset = torch.utils.data.ConcatDataset([
         train_loader.dataset,
