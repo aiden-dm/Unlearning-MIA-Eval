@@ -15,14 +15,14 @@ from Final_Structure.training import load_model
 from Third_Party_Code.MIADisparity.miae.attacks.calibration_mia import CalibrationAttack, CalibrationModelAccess, CalibrationAuxiliaryInfo
 from Third_Party_Code.MIADisparity.experiment.models import ResNet
 
-def get_custom_resnet(dataset, config):
+def get_custom_resnet(dataset):
     num_classes = 10 if dataset == "cifar10" else 100
     num_blocks = [2, 2, 2, 2]                              # ResNet18
     input_size = 32                                        # CIFAR image size
 
     return ResNet(num_blocks=num_blocks, num_classes=num_classes, input_size=input_size).to('cuda')
 
-def calibration_mia(target_model_path, loaders):
+def calibration_mia(target_model_path, loaders, config):
 
     valid_retain_loader = loaders['valid_retain_loader']
     test_retain_loader = loaders['test_retain_loader']
