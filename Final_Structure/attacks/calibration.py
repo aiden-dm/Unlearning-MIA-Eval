@@ -24,12 +24,12 @@ def get_custom_resnet(dataset):
 
 def calibration_mia(target_model_path, loaders):
 
-    train_retain_loader = loaders['train_retain_loader']
-    valid_retain_loader = loaders['valid_retain_loader']
+    train_loader = loaders['train_loader']
+    valid_loader = loaders['valid_loader']
 
     aux_dataset = torch.utils.data.ConcatDataset([
-        train_retain_loader.dataset,
-        valid_retain_loader.dataset
+        train_loader.dataset,
+        valid_loader.dataset
     ])
 
     target_model = load_model("cifar10", target_model_path)
@@ -41,7 +41,7 @@ def calibration_mia(target_model_path, loaders):
     )
 
     config = {
-        "seed": 42,
+        "seed": 2,
         "batch_size": 256,
         "num_classes": 10,
         "lr": 0.001,
@@ -59,37 +59,16 @@ def calibration_mia(target_model_path, loaders):
     # Prepare the attack with retained data (members)
     attack.prepare(aux_dataset)
 
-    # Combine retained and forgotten test data for inference
-    test_retain_loader = loaders['test_retain_loader']
-    test_forget_loader = loaders['test_forget_loader']
-    combined_test_dataset = torch.utils.data.ConcatDataset([
-        test_retain_loader.dataset,
-        test_forget_loader.dataset
-    ])
-
-    # Get membership inference scores (predictions)
-    inference_scores = attack.infer(combined_test_dataset)
-
-    # Create true membership labels: 1 for retained, 0 for forgotten
-    true_labels = np.array([1] * len(test_retain_loader.dataset) + 
-                           [0] * len(test_forget_loader.dataset))
+    forget_scores = attack.infer(loaders['test_forget'].dataset)
     
-    # Using threshold from the attack to get predicted membership (1 if score > threshold)
-    predicted_labels = (inference_scores > attack.threshold).astype(int)
+    retain_scores = attack.infer(loaders['test_retain_loader'].dataset)
 
-    accuracy = accuracy_score(true_labels, predicted_labels)
-    roc_auc = roc_auc_score(true_labels, inference_scores)
 
-    print(f"Membership Inference Attack Accuracy: {accuracy:.4f}")
-    print(f"Membership Inference Attack ROC-AUC: {roc_auc:.4f}")
 
     return {
-        "scores": inference_scores,
-        "true_labels": true_labels,
-        "predicted_labels": predicted_labels,
+        "forget_scores": forget_scores,
+        "retain_scores": retain_scores,
         "threshold": attack.threshold,
-        "accuracy": accuracy,
-        "roc_auc": roc_auc,
         "aux_info": aux_info
     }
 
