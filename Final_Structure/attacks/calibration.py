@@ -15,7 +15,7 @@ from Final_Structure.training import load_model
 from Third_Party_Code.MIADisparity.miae.attacks.calibration_mia import CalibrationAttack, CalibrationModelAccess, CalibrationAuxiliaryInfo
 from Third_Party_Code.MIADisparity.experiment.models import ResNet
 
-def get_custom_resnet(dataset):
+def get_custom_resnet(dataset, config):
     num_classes = 10 if dataset == "cifar10" else 100
     num_blocks = [2, 2, 2, 2]                              # ResNet18
     input_size = 32                                        # CIFAR image size
@@ -39,19 +39,6 @@ def calibration_mia(target_model_path, loaders):
         model=target_model,
         untrained_model=untrained_model
     )
-
-    config = {
-        "seed": 2,
-        "batch_size": 128,
-        "num_classes": 10,
-        "lr": 0.01,
-        "epochs": 100,
-        "num_shadow_models": 1,
-        "shadow_train_ratio": 0.8,
-        "save_path": "./mia_calibration",
-        "log_path": "./mia_calibration/logs",
-        "device": "cuda"
-    }
 
     aux_info = CalibrationAuxiliaryInfo(config)
     attack = CalibrationAttack(model_access, aux_info)
