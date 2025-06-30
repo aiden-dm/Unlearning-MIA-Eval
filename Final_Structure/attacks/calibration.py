@@ -45,7 +45,7 @@ def calibration_mia(target_model_path, loaders):
         "batch_size": 256,
         "num_classes": 10,
         "lr": 0.001,
-        "epochs": 20,
+        "epochs": 45,
         "num_shadow_models": 1,
         "shadow_train_ratio": 0.5,
         "save_path": "./mia_calibration",
