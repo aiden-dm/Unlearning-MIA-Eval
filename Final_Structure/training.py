@@ -2,8 +2,8 @@
 import torch
 import torch.nn as nn
 import torchvision.models as models
-from torch.amp import autocast
 import sys
+from tqdm import tqdm
 
 # Adding the local files to the system path
 sys.path.append('/content/Unlearning-MIA-Eval/Final_Structure')
@@ -33,7 +33,7 @@ def train(model, train_loader, criterion, optimizer, epochs=10, scheduler=None, 
     model.train()
 
     # Starting training process
-    for epoch in range(epochs):
+    for epoch in tqdm(range(epochs)):
         # Initializing current epoch variables
         running_loss = 0.0
         correct, total = 0, 0
@@ -43,15 +43,11 @@ def train(model, train_loader, criterion, optimizer, epochs=10, scheduler=None, 
         for images, labels in train_loader:
             images, labels = images.to(DEVICE), labels.to(DEVICE)
             optimizer.zero_grad()
-            
-            with autocast(device_type='cuda'):
-                outputs = model(images)
-                loss = criterion(outputs, labels)
-            
+            outputs = model(images)
+            loss = criterion(outputs, labels)
+            running_loss += loss.item()
             loss.backward()
             optimizer.step()
-
-            running_loss += loss.item()
             _, predicted = outputs.max(1)
             correct += predicted.eq(labels).sum().item()
             total += labels.size(0)
