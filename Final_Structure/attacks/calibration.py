@@ -1,9 +1,6 @@
 # Imports
 import sys
 import torch
-import numpy as np
-
-from sklearn.metrics import accuracy_score, roc_auc_score
 
 # Adding necessary paths to the system path
 sys.path.append('/content/Unlearning-MIA-Eval')

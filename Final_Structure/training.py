@@ -25,7 +25,17 @@ def get_resnet_model(dataset):
     model.fc = nn.Linear(model.fc.in_features, out_layer_size)
     return model.to(DEVICE)
 
-def train(model, train_loader, valid_loader, criterion, optimizer, epochs=10, scheduler=None, save_path="resnet_cifar.pth"):
+def train(
+    model, 
+    train_loader, 
+    valid_loader, 
+    criterion, 
+    optimizer, 
+    epochs=10, 
+    scheduler=None, 
+    save_path="resnet_cifar.pth"
+):
+    
     model.to(DEVICE)
     
     for epoch in tqdm(range(epochs)):
