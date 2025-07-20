@@ -21,13 +21,7 @@ def get_custom_resnet(dataset):
 
 def calibration_mia(target_model_path, loaders, config):
 
-    valid_retain_loader = loaders['valid_retain_loader']
-    test_retain_loader = loaders['test_retain_loader']
-
-    aux_dataset = torch.utils.data.ConcatDataset([
-        valid_retain_loader.dataset,
-        test_retain_loader.dataset
-    ])
+    aux_dataset = loaders['train_loader']
 
     target_model = load_model("cifar10", target_model_path)
     untrained_model = get_custom_resnet("cifar10")
