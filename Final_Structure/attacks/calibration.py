@@ -21,7 +21,7 @@ def get_custom_resnet(dataset):
 
 def calibration_mia(target_model_path, loaders, config):
 
-    aux_dataset = loaders['train_loader']
+    aux_dataset = loaders['train_loader'].dataset
 
     target_model = load_model("cifar10", target_model_path)
     untrained_model = get_custom_resnet("cifar10")
