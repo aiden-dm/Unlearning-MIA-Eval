@@ -69,5 +69,47 @@ def train(model, train_loader, criterion, optimizer, epochs=10, scheduler=None, 
 
 def load_model(dataset, checkpoint_path="resnet_cifar.pt"):
     model = get_resnet_model(dataset)
-    model.load_state_dict(torch.load(checkpoint_path, map_location=DEVICE))
+    
+    # Load checkpoint with compatibility for pruned models
+    state_dict = torch.load(checkpoint_path, map_location=DEVICE)
+    
+    # Handle pruned models (convert weight_orig + weight_mask to weight)
+    cleaned_state_dict = convert_pruned_state_dict(state_dict)
+    
+    model.load_state_dict(cleaned_state_dict)
     return model
+
+
+def convert_pruned_state_dict(state_dict):
+    """Convert pruned model state dict to regular format"""
+    cleaned_state_dict = {}
+    
+    # Check if this is a pruned model
+    has_pruned_weights = any('weight_orig' in key for key in state_dict.keys())
+    
+    if has_pruned_weights:
+        print("Detected pruned model, converting weights...")
+        
+        # Convert weight_orig + weight_mask to weight
+        for key in state_dict.keys():
+            if key.endswith('weight_orig'):
+                # Get the base name (remove _orig suffix)
+                base_name = key[:-5]  # Remove '_orig'
+                mask_name = base_name + '_mask'
+                
+                if mask_name in state_dict:
+                    # Compute actual weight: weight_orig * weight_mask
+                    actual_weight = state_dict[key] * state_dict[mask_name]
+                    cleaned_state_dict[base_name] = actual_weight
+                    print(f"Converted {key} + {mask_name} -> {base_name}")
+                else:
+                    # If no mask, just use original weight
+                    cleaned_state_dict[base_name] = state_dict[key]
+            elif not key.endswith('weight_mask'):
+                # Copy non-weight parameters as-is
+                cleaned_state_dict[key] = state_dict[key]
+    else:
+        # Not a pruned model, return as-is
+        cleaned_state_dict = state_dict
+    
+    return cleaned_state_dict
