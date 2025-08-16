@@ -1,6 +1,7 @@
 # Imports
 import sys
 import torch
+from torch.utils.data import ConcatDataset
 
 # Adding necessary paths to the system path
 sys.path.append('/content/Unlearning-MIA-Eval')
@@ -21,7 +22,12 @@ def get_custom_resnet(dataset):
 
 def calibration_mia(target_model_path, loaders, config):
 
-    aux_dataset = loaders['train_retain_loader'].dataset
+    train_retain_loader = loaders['train_retain_loader']
+    train_forget_loader = loaders['train_forget_loader']
+    valid_forget_loader = loaders['valid_forget_loader']
+    test_forget_loader = loaders['test_forget_loader']
+
+    aux_dataset = train_retain_loader.dataset
 
     target_model = load_model("cifar10", target_model_path)
     untrained_model = get_custom_resnet("cifar10")
@@ -37,12 +43,16 @@ def calibration_mia(target_model_path, loaders, config):
     # Prepare the attack with retained data (members)
     attack.prepare(aux_dataset)
 
-    forget_scores = attack.infer(loaders['train_forget_loader'].dataset)
-    retain_scores = attack.infer(loaders['train_retain_loader'].dataset)
+    unseen_dataset = ConcatDataset([valid_forget_loader.dataset, test_forget_loader.dataset])
 
+    forget_scores = attack.infer(train_forget_loader.dataset)
+    retain_scores = attack.infer(train_retain_loader.dataset)
+    unseen_scores = attack.infer(unseen_dataset)
+    
     return {
         "forget_scores": forget_scores,
         "retain_scores": retain_scores,
+        "unseen_scores": unseen_scores,
         "threshold": attack.threshold,
         "aux_info": aux_info
     }
