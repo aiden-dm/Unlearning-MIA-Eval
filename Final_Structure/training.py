@@ -84,5 +84,5 @@ def train(
 
 def load_model(dataset, checkpoint_path="resnet_cifar.pt"):
     model = get_resnet_model(dataset)
-    model.load_state_dict(torch.load(checkpoint_path, map_location=DEVICE))
+    model.load_state_dict(torch.load(checkpoint_path, map_location=DEVICE, weights_only=False))
     return model
