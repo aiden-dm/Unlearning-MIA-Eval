@@ -9,7 +9,7 @@ from tabulate import tabulate
 import argparse
 
 # Adding necessary paths to the system path
-sys.path.append('/content/Unlearning-MIA-Eval')
+sys.path.append('/media/jane/f29bf4f7-28fb-49c1-b339-b5d19c5e0d63/home/tonyn/Personal/Other/Unlearning-MIA-Eval')
 
 # Local imports
 from Final_Structure.datasets import get_loaders
@@ -72,6 +72,7 @@ def init_cifar10_params(experiment_params):
     args.kd_T = 2
     args.print_accuracies = True
     args.dataset = 'cifar10'
+    args.save_checkpoint = True  # Add this line
     experiment_params['scrub'] = {
         'args': args
     }
@@ -84,6 +85,7 @@ def init_cifar10_params(experiment_params):
     args.batch_size = 256
     args.print_accuracies = True
     args.dataset = 'cifar10'
+    args.save_checkpoint = True  # Add this line
     experiment_params['badt'] = {
         'args': args
     }
@@ -95,6 +97,7 @@ def init_cifar10_params(experiment_params):
     args.selection_weighting = 1
     args.print_accuracies = True
     args.dataset = 'cifar10'
+    args.save_checkpoint = True  # Add this line
     experiment_params['ssd'] = {
         'args': args
     }
@@ -253,15 +256,15 @@ def run_experiment(experiment_params, unlearn_methods, seed):
     forget_lists_strings = experiment_params['dataset']['forget_lists_strings']
 
     # Train the full version of the ResNet18 model
-    root_path = '/content/Unlearning-MIA-Eval/Final_Structure/data'
+    root_path = '/media/jane/f29bf4f7-28fb-49c1-b339-b5d19c5e0d63/home/tonyn/Personal/Other/Unlearning-MIA-Eval/Test/Final_Structure/data'
     forget_classes = [0]  # Number in here is irrelevant
     loaders = get_loaders(root=root_path, dataset=experiment_params['dataset']['name'], forget_classes=forget_classes, seed=seed)
-    full_model_path = f"/content/drive/MyDrive/AIML_Final_Project/checkpoints/resnet_full_{experiment_params['dataset']['name']}.pt"
+    full_model_path = f"/media/jane/f29bf4f7-28fb-49c1-b339-b5d19c5e0d63/home/tonyn/Personal/Other/Unlearning-MIA-Eval/Final_Structure/Temp/resnet_full_{experiment_params['dataset']['name']}.pt"
     if not os.path.isfile(full_model_path):
         full_model, full_optimizer, full_criterion, full_scheduler = init_experiment_resnet18(experiment_params['full_train']['args'])
         train(
             model=full_model, 
-            train_loader=loaders[0], 
+            train_loader=loaders["train_loader"], 
             criterion=full_criterion, 
             optimizer=full_optimizer, 
             epochs=experiment_params['full_train']['args'].epochs,
@@ -278,12 +281,12 @@ def run_experiment(experiment_params, unlearn_methods, seed):
     for forget_list, forget_string in zip(forget_lists, forget_lists_strings):
         
         # Getting all the loaders
-        root_path = '/content/Unlearning-MIA-Eval/Final_Structure/data'
+        root_path = '/media/jane/f29bf4f7-28fb-49c1-b339-b5d19c5e0d63/home/tonyn/Personal/Other/Unlearning-MIA-Eval/Test/Final_Structure/data'
         loaders = get_loaders(root=root_path, dataset=experiment_params['dataset']['name'], forget_classes=forget_list, seed=seed)
-        train_forget_loader = loaders[3]
-        train_retain_loader = loaders[4]
-        test_forget_loader = loaders[7]
-        test_retain_loader = loaders[8]
+        train_forget_loader = loaders["train_forget_loader"]
+        train_retain_loader = loaders["train_retain_loader"]
+        test_forget_loader = loaders["test_forget_loader"]
+        test_retain_loader = loaders["test_retain_loader"]
 
         # Perform unlearning methods
         metrics_data = []
@@ -296,7 +299,7 @@ def run_experiment(experiment_params, unlearn_methods, seed):
             
             if method == 'retrain':
 
-                unl_args.check_path = f"/content/drive/MyDrive/AIML_Final_Project/checkpoints/retrain_cls_{forget_string}_{experiment_params['dataset']['name']}.pt"
+                unl_args.check_path = f"/media/jane/f29bf4f7-28fb-49c1-b339-b5d19c5e0d63/home/tonyn/Personal/Other/Unlearning-MIA-Eval/Final_Structure/Temp/retrain_cls_{forget_string}_{experiment_params['dataset']['name']}.pt"
 
                 if not os.path.isfile(unl_args.check_path): 
                     unl_model, unl_optimizer, unl_criterion, unl_scheduler = init_experiment_resnet18(experiment_params['retrain']['args'])
@@ -316,7 +319,7 @@ def run_experiment(experiment_params, unlearn_methods, seed):
             elif method == 'SCRUB':
                 
                 unl_args = experiment_params['scrub']['args']
-                unl_args.check_path = f"/content/drive/MyDrive/AIML_Final_Project/checkpoints/scrub_cls_{forget_string}_{experiment_params['dataset']['name']}.pt"
+                unl_args.check_path = f"/media/jane/f29bf4f7-28fb-49c1-b339-b5d19c5e0d63/home/tonyn/Personal/Other/Unlearning-MIA-Eval/Final_Structure/Temp/scrub_cls_{forget_string}_{experiment_params['dataset']['name']}.pt"
                 
                 if not os.path.isfile(unl_args.check_path):
                     print(f'Performing SCRUB Unlearning on Class Class/Classes {forget_string}')
@@ -328,7 +331,7 @@ def run_experiment(experiment_params, unlearn_methods, seed):
             elif method == 'BadTeach':
                 
                 unl_args = experiment_params['badt']['args']
-                unl_args.check_path = f"/content/drive/MyDrive/AIML_Final_Project/checkpoints/badt_cls_{forget_string}_{experiment_params['dataset']['name']}.pt"
+                unl_args.check_path = f"/media/jane/f29bf4f7-28fb-49c1-b339-b5d19c5e0d63/home/tonyn/Personal/Other/Unlearning-MIA-Eval/Final_Structure/Temp/badt_cls_{forget_string}_{experiment_params['dataset']['name']}.pt"
 
                 if not os.path.isfile(unl_args.check_path):
                     print(f'Performing BadTeach Unlearning on Class {forget_string}')
@@ -340,7 +343,7 @@ def run_experiment(experiment_params, unlearn_methods, seed):
             else:
                 
                 unl_args = experiment_params['ssd']['args']
-                unl_args.check_path = f"/content/drive/MyDrive/AIML_Final_Project/checkpoints/ssd_cls_{forget_string}_{experiment_params['dataset']['name']}.pt"
+                unl_args.check_path = f"/media/jane/f29bf4f7-28fb-49c1-b339-b5d19c5e0d63/home/tonyn/Personal/Other/Unlearning-MIA-Eval/Final_Structure/Temp/ssd_cls_{forget_string}_{experiment_params['dataset']['name']}.pt"
                 
                 if not os.path.isfile(unl_args.check_path):
                     print(f'Performing SSD Unlearning on Class {forget_string}')
@@ -392,11 +395,11 @@ def run_experiment(experiment_params, unlearn_methods, seed):
     print(tabulate(mia_df, headers='keys', tablefmt='pretty'))
 
     # Saving data tables locally
-    r_performance_df.to_pickle(f"/content/drive/MyDrive/AIML_Final_Project/retain_performance_train_{experiment_params['dataset']['name']}.pkl")
-    f_performance_df.to_pickle(f"/content/drive/MyDrive/AIML_Final_Project/forget_performance_train_{experiment_params['dataset']['name']}.pkl")
-    test_r_performance_df.to_pickle(f"/content/drive/MyDrive/AIML_Final_Project/retain_performance_test_{experiment_params['dataset']['name']}.pkl")
-    test_f_performance_df.to_pickle(f"/content/drive/MyDrive/AIML_Final_Project/forget_performance_test_{experiment_params['dataset']['name']}.pkl")
-    mia_df.to_pickle(f"/content/drive/MyDrive/AIML_Final_Project/mia_results_{experiment_params['dataset']['name']}.pkl")
+    r_performance_df.to_pickle(f"/media/jane/f29bf4f7-28fb-49c1-b339-b5d19c5e0d63/home/tonyn/Personal/Other/Unlearning-MIA-Eval/Final_Structure/Temp/retain_performance_train_{experiment_params['dataset']['name']}.pkl")
+    f_performance_df.to_pickle(f"/media/jane/f29bf4f7-28fb-49c1-b339-b5d19c5e0d63/home/tonyn/Personal/Other/Unlearning-MIA-Eval/Final_Structure/Temp/forget_performance_train_{experiment_params['dataset']['name']}.pkl")
+    test_r_performance_df.to_pickle(f"/media/jane/f29bf4f7-28fb-49c1-b339-b5d19c5e0d63/home/tonyn/Personal/Other/Unlearning-MIA-Eval/Final_Structure/Temp/retain_performance_test_{experiment_params['dataset']['name']}.pkl")
+    test_f_performance_df.to_pickle(f"/media/jane/f29bf4f7-28fb-49c1-b339-b5d19c5e0d63/home/tonyn/Personal/Other/Unlearning-MIA-Eval/Final_Structure/Temp/forget_performance_test_{experiment_params['dataset']['name']}.pkl")
+    mia_df.to_pickle(f"/media/jane/f29bf4f7-28fb-49c1-b339-b5d19c5e0d63/home/tonyn/Personal/Other/Unlearning-MIA-Eval/Final_Structure/Temp/mia_results_{experiment_params['dataset']['name']}.pkl")
 
 def main():
     # Create argument parser
