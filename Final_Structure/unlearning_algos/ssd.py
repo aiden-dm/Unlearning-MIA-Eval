@@ -8,11 +8,12 @@ sys.path.append('/content/Unlearning-MIA-Eval')
 # Framework imports
 from Final_Structure.evaluate import train_validation
 from Final_Structure.training import load_model
+from Final_Structure.unlearning_algos.unlearning_inputs import SSDInput
 
 # Third party code imports
 import Third_Party_Code.SSD.src.ssd as ssd_file
 
-def ssd(full_model_path, loaders, args):
+def ssd(loaders, args: SSDInput):
     
     # Unpacking the data loaders
     train_loader = loaders['train_loader']
@@ -33,12 +34,12 @@ def ssd(full_model_path, loaders, args):
     }
 
     # Loading the fully trained ResNet model
-    model = load_model(dataset=args.dataset, checkpoint_path=full_model_path)
+    model = load_model(dataset=args.dataset, checkpoint_path=args.model_path)
 
     # load the trained model
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
 
-    pdr = ssd_file.ParameterPerturber(model, optimizer, 'cuda', parameters)
+    pdr = ssd_file.ParameterPerturber(model, optimizer, args.device, parameters)
 
     model = model.eval()
 
@@ -59,7 +60,7 @@ def ssd(full_model_path, loaders, args):
                                 valid_forget_loader)
     
     # Save model checkpoint
-    if args.save_checkpoint:
+    if args.check_path is not None:
         torch.save(model.state_dict(), args.check_path)
     
     return model, acc_dict
