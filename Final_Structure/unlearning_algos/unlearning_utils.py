@@ -7,8 +7,7 @@ import torch.nn as nn
 import time
 from types import SimpleNamespace
 
-from .training import load_model
-
+from Final_Structure.training import load_model
 
 def l1_regularization(model):
     """L1 regularization for model parameters"""

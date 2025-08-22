@@ -1,4 +1,7 @@
 from dataclasses import dataclass
+import torch
+import torch.nn as nn
+import torch.optim as optim
 
 @dataclass
 class SCRUBInput:
@@ -33,5 +36,18 @@ class SSDInput:
     selection_weighting: float
     learning_rate: float
     device: str
+    model_path: str
+    check_path: str
+
+@dataclass
+class FineTuneInput:
+    dataset: str
+    epoch: int
+    with_l1: bool
+    unlearn_epochs: int
+    no_l1_epochs: int
+    alpha: float
+    learning_rate: float
+    print_freq: int
     model_path: str
     check_path: str
