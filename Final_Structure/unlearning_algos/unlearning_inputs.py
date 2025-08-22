@@ -51,3 +51,14 @@ class FineTuneInput:
     print_freq: int
     model_path: str
     check_path: str
+
+@dataclass
+class FineTuneInput:
+    dataset: str
+    epoch: int
+    with_l1: bool
+    alpha: float
+    learning_rate: float
+    print_freq: int
+    model_path: str
+    check_path: str
