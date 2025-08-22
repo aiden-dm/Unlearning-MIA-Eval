@@ -53,7 +53,7 @@ class FineTuneInput:
     check_path: str
 
 @dataclass
-class FineTuneInput:
+class GradientAscentInput:
     dataset: str
     epoch: int
     with_l1: bool
