@@ -26,7 +26,7 @@ def apply_perturb(model, v):
             curr += length
 
 
-def woodfisher(model, train_dl, device, criterion, v):
+def woodfisher_alg(model, train_dl, device, criterion, v):
     """Woodfisher algorithm for computing parameter updates"""
     model.eval()
     k_vec = torch.clone(v)
@@ -121,7 +121,7 @@ def woodfisher(loaders, args: WoodFisherInput):
     
     # Apply Woodfisher algorithm
     print("Applying Woodfisher algorithm...")
-    perturb = woodfisher(
+    perturb = woodfisher_alg(
         model,
         retain_single_loader,
         device=device,
