@@ -67,10 +67,6 @@ def fisher(loaders, args: FisherInput):
             noise = noise * 10
         
         parameter.data = parameter.data + noise
-    
-    # Validate
-    criterion = nn.CrossEntropyLoss()
-    results = validate_unlearning(model, loaders, criterion, device)
 
     if args.check_path is not None:
         torch.save(model.state_dict(), args.check_path)

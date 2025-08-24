@@ -69,3 +69,10 @@ class FisherInput:
     alpha: float
     model_path: str
     check_path: str
+
+@dataclass
+class WoodFisherInput:
+    dataset: str
+    alpha: float
+    model_path: str
+    check_path: str
