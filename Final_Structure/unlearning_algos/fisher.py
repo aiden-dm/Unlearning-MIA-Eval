@@ -1,7 +1,7 @@
 import torch
 from torch.autograd import grad
 import torch.nn as nn
-import tqdm
+from tqdm import tqdm
 
 from Final_Structure.unlearning_algos.unlearning_inputs import FisherInput
 from Final_Structure.training import load_model
