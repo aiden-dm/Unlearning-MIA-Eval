@@ -62,3 +62,10 @@ class GradientAscentInput:
     print_freq: int
     model_path: str
     check_path: str
+
+@dataclass
+class FisherInput:
+    dataset: str
+    alpha: float
+    model_path: str
+    check_path: str
