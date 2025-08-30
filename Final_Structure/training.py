@@ -2,8 +2,8 @@
 import torch
 import torch.nn as nn
 import torchvision.models as models
-from torch.amp import autocast
 import sys
+from tqdm import tqdm
 
 # Adding the local files to the system path
 sys.path.append('/content/Unlearning-MIA-Eval/Final_Structure')
@@ -25,45 +25,60 @@ def get_resnet_model(dataset):
     model.fc = nn.Linear(model.fc.in_features, out_layer_size)
     return model.to(DEVICE)
 
-def train(model, train_loader, criterion, optimizer, epochs=10, scheduler=None, save_path="resnet_cifar.pth"):
-    # Make sure model is on the GPU
+def train(
+    model, 
+    train_loader, 
+    valid_loader, 
+    criterion, 
+    optimizer, 
+    epochs=10, 
+    scheduler=None, 
+    save_path="resnet_cifar.pth"
+):
+    
     model.to(DEVICE)
     
-    # Putting model in training mode
-    model.train()
-
-    # Starting training process
-    for epoch in range(epochs):
-        # Initializing current epoch variables
-        running_loss = 0.0
-        correct, total = 0, 0
-
-        print(f'Starting Epoch [{epoch+1}/{epochs}]...')
-        
+    for epoch in tqdm(range(epochs)):
+        model.train()
+        train_loss = 0.0
         for images, labels in train_loader:
             images, labels = images.to(DEVICE), labels.to(DEVICE)
             optimizer.zero_grad()
-            
-            with autocast(device_type='cuda'):
-                outputs = model(images)
-                loss = criterion(outputs, labels)
-            
+            outputs = model(images)
+            loss = criterion(outputs, labels)
+            train_loss += loss.item()
             loss.backward()
             optimizer.step()
 
-            running_loss += loss.item()
-            _, predicted = outputs.max(1)
-            correct += predicted.eq(labels).sum().item()
-            total += labels.size(0)
-
-        epoch_loss = running_loss / len(train_loader)
-        epoch_acc = correct / total
-
         if scheduler:
-            scheduler.step(epoch_loss)
+            scheduler.step()
         
-        print(f"Epoch [{epoch+1}/{epochs}], Loss: {epoch_loss:.4f}, Accuracy: {epoch_acc:.4f}")
-        
+        if epoch % 20 == 0 or epoch == epochs - 1:
+            model.eval()
+            with torch.no_grad():
+                valid_correct_predictions = 0
+                total_samples = 0
+                for _, data in enumerate(valid_loader):
+                    images, labels = data
+                    images, labels = images.to(DEVICE), labels.to(DEVICE)
+                    outputs = model(images)
+                    _, predicted = torch.max(outputs, 1)
+                    valid_correct_predictions += (predicted == labels).sum().item()
+                    total_samples += labels.size(0)
+                valid_accuracy = valid_correct_predictions / total_samples
+
+                train_correct_predictions = 0
+                total_samples = 0
+                for _, data in enumerate(train_loader):
+                    images, labels = data
+                    images, labels = images.to(DEVICE), labels.to(DEVICE)
+                    outputs = model(images)
+                    _, predicted = torch.max(outputs, 1)
+                    train_correct_predictions += (predicted == labels).sum().item()
+                    total_samples += labels.size(0)
+                train_accuracy = train_correct_predictions / total_samples
+                print(f"Epoch {epoch}, train_acc: {train_accuracy * 100:.2f}%, valid_acc: {valid_accuracy * 100:.2f}%, Loss: {train_loss:.4f}, lr: {scheduler.get_last_lr()[0]:.4f}")
+    
     # Save checkpoint
     torch.save(model.state_dict(), save_path)
 
