@@ -13,7 +13,7 @@ from .unlearning_utils import (
     convert_loaders_for_unlearning, create_unlearning_args,
     accuracy, AverageMeter, validate_unlearning
 )
-from .training import load_model, get_resnet_model
+from ..training import load_model, get_resnet_model
 
 
 def ft_iter(data_loaders, model, criterion, optimizer, epoch, args, with_l1=False):
