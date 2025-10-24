@@ -1,6 +1,9 @@
 import sys
 import torch
 from torch.utils.data import ConcatDataset
+from Third_Party_Code.MIADisparity.experiment.models import ResNet
+import torch.serialization
+torch.serialization.add_safe_globals([ResNet])
 
 sys.path.append('/content/Unlearning-MIA-Eval')
 
