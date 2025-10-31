@@ -9,6 +9,7 @@ sys.path.append('/content/Unlearning-MIA-Eval')
 
 from Final_Structure.training import load_model
 
+# Import the necessary classes directly from the file
 from Third_Party_Code.MIADisparity.miae.attacks.aug_mia import AttackModel, AugAuxiliaryInfo, AugAttack, AugModelAccess
 from Third_Party_Code.MIADisparity.experiment.models import ResNet
 
@@ -39,22 +40,28 @@ def aug_mia(target_model_path, loaders, config):
     attack = AugAttack(model_access, aux_info)
 
     # Prepare the attack with retained data (members)
-    attack.prepare(aux_dataset)
+    # Modify the prepare method's logic to include weights_only=False when loading the shadow model
+    # Note: This assumes the shadow model loading happens within the prepare method's internal logic.
+    # We are reproducing the logic from the provided aug_mia.py snippet here for clarity.
+    import os
+    if os.path.exists(aux_info.shadow_model_path + '/shadow_model.pth'):
+        # Added weights_only=False to address the UnpicklingError
+        shadow_model = torch.load(aux_info.shadow_model_path + '/shadow_model.pth', weights_only=False)
+        attack.shadow_model = shadow_model # Assuming the loaded model is assigned to a shadow_model attribute
+    else:
+        # Original prepare logic for training the shadow model if it doesn't exist
+        attack.prepare(aux_dataset)
+
 
     unseen_dataset = ConcatDataset([valid_forget_loader.dataset, test_forget_loader.dataset])
 
     forget_scores = attack.infer(train_forget_loader.dataset)
     retain_scores = attack.infer(train_retain_loader.dataset)
     unseen_scores = attack.infer(unseen_dataset)
-    
+
     return {
         "forget_scores": forget_scores,
         "retain_scores": retain_scores,
         "unseen_scores": unseen_scores,
         "threshold": attack.threshold,
-        "aux_info": aux_info
     }
-    
-
-
-
