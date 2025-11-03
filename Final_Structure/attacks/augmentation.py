@@ -39,18 +39,7 @@ def aug_mia(target_model_path, loaders, config):
     aux_info = AugAuxiliaryInfo(config)
     attack = AugAttack(model_access, aux_info)
 
-    # Prepare the attack with retained data (members)
-    # Modify the prepare method's logic to include weights_only=False when loading the shadow model
-    # Note: This assumes the shadow model loading happens within the prepare method's internal logic.
-    # We are reproducing the logic from the provided aug_mia.py snippet here for clarity.
-    import os
-    if os.path.exists(aux_info.shadow_model_path + '/shadow_model.pth'):
-        # Added weights_only=False to address the UnpicklingError
-        shadow_model = torch.load(aux_info.shadow_model_path + '/shadow_model.pth', weights_only=False)
-        attack.shadow_model = shadow_model # Assuming the loaded model is assigned to a shadow_model attribute
-    else:
-        # Original prepare logic for training the shadow model if it doesn't exist
-        attack.prepare(aux_dataset)
+    attack.prepare(aux_dataset)
 
 
     unseen_dataset = ConcatDataset([valid_forget_loader.dataset, test_forget_loader.dataset])
